@@ -1,5 +1,6 @@
 import requests
 import pymysql
+import requests.adapters
 from rich.panel import Panel
 from rich.progress import Progress
 
@@ -9,12 +10,16 @@ class FrameProgress(Progress):
         yield Panel(self.make_tasks_table(self.tasks), expand=False)
 
 
+headers = {
+    # "Connection": "close"
+}
 # 全局变量
+maxThread = 20  # 最大线程数
 requests.packages.urllib3.disable_warnings()  # 关闭警告
-requests.adapters.DEFAULT_RETRIES = 5  # 重试次数
+requests.adapters.DEFAULT_RETRIES = 3  # 重试次数
 session = requests.session()  # 创建会话
 session.keep_alive = False  # 关闭多余连接
-maxThread = None  # 最大线程数
+
 db = pymysql.connect(
     host="bj-cynosdbmysql-grp-jrtc8xqu.sql.tencentcdb.com",
     user="tutu",

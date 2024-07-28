@@ -31,3 +31,11 @@ def normalize_novel_name(str: str) -> str:
         .replace(" ", "")
     )
     return novel_name
+
+
+# 处理不规范的引言
+def normalize_intro(str: str) -> str:
+    intro = str
+    # 去除\xa0
+    intro = intro.replace("\xa0", "").replace("&amp;", "").replace("#61", "").strip()
+    return intro

@@ -1,6 +1,6 @@
-from global_config import maxThread,session,db,FrameProgress
+from global_config import maxThread,session,db,headers,FrameProgress
 from bs4 import BeautifulSoup
-from utils import normalize_novel_name
+from utils import normalize_novel_name,normalize_intro
 from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor, as_completed,wait, ALL_COMPLETED
 
@@ -14,7 +14,7 @@ def get_books_list()->list:
     # 开启线程池
     start_num=0
     num_page = get_books_list_page_num()
-    num_page=2
+    # num_page=100
     taskList=[]
     percent=0
     print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
@@ -42,8 +42,8 @@ def get_books_list()->list:
 
 # 1-1.获取小说列表页数
 def get_books_list_page_num():
-    url = "https://www.biqugen.net/quanben/"
-    res = session.get(url)
+    url = "http://www.biqugen.net/quanben/"
+    res = session.get(url,headers=headers,timeout=3)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
@@ -53,13 +53,18 @@ def get_books_list_page_num():
 # 1-2.获取第i页小说列表
 def get_books_info(i,novel_set,progress):
     novel_list=[]
-    task = progress.add_task(f"[blue]获取第{i}页", total=40)
-    url = f"https://www.biqugen.net/quanben/{i}"
-    res = session.get(url,verify=False)
+    task = progress.add_task(f"[blue]第{i}页", total=40)
+    url = f"http://www.biqugen.net/quanben/{i}"
+    res = session.get(url,headers=headers,timeout=3,verify=False)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
-    items = soup.find("div", id="tlist").find_all("li")
+    tlist = soup.find("div", id="tlist")
+    if tlist==None:
+        print(f"第{i}页获取失败,http://www.biqugen.net/quanben/{i}")
+        progress.update(task, visible=False)
+        return novel_list
+    items=tlist.find_all("li")
     setFlag=False # 用于判断是否已经设置了total
     for item in items:
         novel = {
@@ -103,8 +108,12 @@ def get_books_info(i,novel_set,progress):
 
 # 1-3.获取小说其他信息
 def get_books_other_info(novel)->bool:
-    url = f"https://www.biqugen.net/book/{novel["book_id"]}/"
-    res = session.get(url,verify=False)
+    url = f"http://www.biqugen.net/book/{novel["book_id"]}/"
+    try:
+        res = session.get(url,headers=headers,timeout=3,verify=False)
+    except Exception as e:
+        print (f"{url}访问失败")
+        return False
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
@@ -119,13 +128,14 @@ def get_books_other_info(novel)->bool:
     # 获取小说简介
     intro = soup.find("div", id="intro").text
     # 去除\xa0
-    novel["intro"] = intro.replace("\xa0", "").replace("&amp;", "").replace("#61", "").strip()
+    novel["intro"] = normalize_intro(intro)
     novel["write_status"] = '已完结' if write_status=="已完成" else "连载中"
     novel["popularity"] = popularity
     return True
     
 # 1-4.存储小说列表至数据库
 def save_books_list_to_db(novel_list:list):
+    global db
     db.connect()  # 连接
     cursor = db.cursor()  # 创建游标
     # 获取数据库中已有的小说列表(仅获取小说名)
@@ -205,45 +215,56 @@ def save_books_list_to_db(novel_list:list):
     db.close()
     print("小说列表存储成功")
 
-# 1-5.重置数据库表books
-def reset_books_list_to_db():
+# 从数据库获取异常的小说列表
+def get_abnormal_books_list_from_db():
+    global db
     db.connect()  # 连接
     cursor = db.cursor()  # 创建游标
-    # 删除表books
-    cursor.execute('DROP TABLE IF EXISTS books')
-    # 创建表books，id:自增主键
+    novel_list = []
+    novel = {
+        "book_id": 0,
+        "book_name": "",
+        "book_link": "",
+        "book_author": "",
+        "book_publish_time": "",
+        "write_status": "",
+        "popularity": "",
+        "intro": "",
+        "abnormal": False,
+    }
+    # 需要获取的值：id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path
     cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS books(
-            id INT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键',
-            book_id INT COMMENT '笔趣阁小说id' not null,
-            book_name VARCHAR(255) COMMENT '小说名' not null,
-            book_link VARCHAR(255) COMMENT '小说链接' not null,
-            book_author VARCHAR(255) COMMENT '小说作者',
-            book_publish_time VARCHAR(255) COMMENT '小说发布时间',
-            write_status VARCHAR(255) COMMENT '小说连载状态',
-            file_path VARCHAR(255) COMMENT '小说文件路径',
-            popularity VARCHAR(255) COMMENT '小说人气',
-            intro TEXT COMMENT '小说简介',
-            abnormal BOOLEAN DEFAULT FALSE COMMENT '是否异常'
-        )
-    """
+        "SELECT id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path FROM books WHERE abnormal=TRUE"
     )
-    db.commit()
-    print("数据库表books重置成功")
+    db_list = cursor.fetchall()
+    for item in db_list:
+        novel["id"] = item[0]
+        novel["book_id"] = item[1]
+        novel["book_name"] = item[2]
+        novel["book_link"] = item[3]
+        novel["book_author"] = item[4]
+        novel["write_status"] = item[5]
+        novel["popularity"] = item[6]
+        novel["intro"] = item[7]
+        novel["abnormal"] = item[8]
+        novel["file_path"] = item[9]
+        novel_list.append(novel)
     cursor.close()
     db.close()
+    return novel_list
 
-
-
-# 3.获取小说内容
-
-# 4.保存小说内容
-
-# 入口
-if __name__ == "__main__":
-    # 全局变量
-    print("开始爬取")
-    # reset_books_list_to_db()
-    novel_list=get_books_list()
-    save_books_list_to_db(novel_list)
+# 更新异常的小说
+def update_abnormal_books_list(list:list):
+    with FrameProgress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn()
+        ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
+        task = progress.add_task("更新异常小说", total=len(list))
+        for novel in list:
+            executor.submit(get_books_info,novel,progress)
+            progress.update(task, advance=1)
+    return list    
