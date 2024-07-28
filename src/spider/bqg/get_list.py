@@ -114,6 +114,7 @@ def get_books_other_info(novel_list:list)->list:
         for _ in as_completed(task_list):
             progress.update(task, advance=1)
         wait(task_list, return_when=ALL_COMPLETED)
+    console.log("获取小说其他信息完成")
     return novel_list
 
 # 获取某本小说其他信息(用于submit)

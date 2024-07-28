@@ -44,22 +44,23 @@ def get_no_extra_books_list_from_db() -> list:
     global conn
     cursor = conn.cursor()  # 创建游标
     novel_list = []
-    novel = {
-        "book_name": "",
-        "book_link": "",
-        "book_author": "",
-        "book_publish_time": "",
-        "write_status": "",
-        "popularity": "",
-        "intro": "",
-        "abnormal": False,
-        "is_extra": False,
-    }
+
     cursor.execute(
-        "SELECT book_id,book_name,book_link,book_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM books WHERE abnormal=TRUE"
+        "SELECT book_id,book_name,book_link,book_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM books WHERE is_extra=0"
     )
     db_list = cursor.fetchall()
     for item in db_list:
+        novel = {
+            "book_name": "",
+            "book_link": "",
+            "book_author": "",
+            "book_publish_time": "",
+            "write_status": "",
+            "popularity": "",
+            "intro": "",
+            "abnormal": False,
+            "is_extra": False,
+        }
         novel["book_id"] = item[0]
         novel["book_name"] = item[1]
         novel["book_link"] = item[2]
@@ -188,35 +189,34 @@ def update_books_list(list: list) -> None:
     ) as progress:
         task = progress.add_task("更新小说列表", total=len(list))
         for novel in list:
-            if novel["is_extra"] == None:
-                continue
+            if novel["is_extra"]:
+                try:
+                    cursor.execute(
+                        f"""
+                            UPDATE books
+                            SET
+                                write_status="{novel["write_status"]}",
+                                popularity="{novel["popularity"]}",
+                                intro="{novel["intro"]}",
+                                abnormal={novel["abnormal"]},
+                                is_extra={novel["is_extra"]}
+                            WHERE book_id={novel["book_id"]}
+                        """
+                    )
+                except Exception:
+                    print(
+                        f"""
+                            UPDATE books
+                            SET
+                                write_status="{novel["write_status"]}",
+                                popularity="{novel["popularity"]}",
+                                intro="{novel["intro"]}",
+                                abnormal={novel["abnormal"]},
+                                is_extra={novel["is_extra"]}
+                            WHERE book_id={novel["book_id"]}
+                        """
+                    )
             progress.update(task, advance=1)
-            try:
-                cursor.execute(
-                    f"""
-                        UPDATE books
-                        SET
-                            write_status="{novel["write_status"]}",
-                            popularity="{novel["popularity"]}",
-                            intro="{novel["intro"]}",
-                            abnormal={novel["abnormal"]},
-                            is_extra={True}
-                        WHERE book_id={novel["book_id"]}
-                    """
-                )
-            except Exception:
-                print(
-                    f"""
-                        UPDATE books
-                        SET
-                            write_status="{novel["write_status"]}",
-                            popularity="{novel["popularity"]}",
-                            intro="{novel["intro"]}",
-                            abnormal={novel["abnormal"]},
-                            is_extra={True}
-                        WHERE book_id={novel["book_id"]}
-                    """
-                )
     conn.commit()
     cursor.close()
     console.log("小说列表更新成功")
