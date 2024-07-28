@@ -7,7 +7,7 @@
 	"scripts": {
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"ts": "nodemon  -e  ts,tsx  --exec ts-node src/test/index.ts",
-		"bqg:get_list": "clear && python src/spider/bqg/get_list.py"
+		"bqg": "clear && python src/spider/bqg/index.py"
 	},
 	"keywords": [],
 	"author": "",
