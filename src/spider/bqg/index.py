@@ -1,17 +1,9 @@
-# TODO 爬取笔趣阁小说并保存在本地
-import pymysql
-import requests
+from global_config import maxThread,session,cursor,db,FrameProgress
 from bs4 import BeautifulSoup
 from utils import normalize_novel_name
-from rich.progress import Progress,MofNCompleteColumn,TextColumn,BarColumn,TimeRemainingColumn
+from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor, as_completed,wait, ALL_COMPLETED
-import time
-from rich.panel import Panel
 
-
-class FrameProgress(Progress):
-    def get_renderables(self):
-        yield Panel(self.make_tasks_table(self.tasks), expand=False)
 
 
 # 1.获取小说列表
@@ -20,22 +12,29 @@ def get_books_list()->list:
     novel_list = []
     # 获取每一页的小说列表
     # 开启线程池
-    num_page = get_books_list_page_num()
+    start_num=0
+    # num_page = get_books_list_page_num()
+    num_page=100
     taskList=[]
+    percent=0
     with FrameProgress(
-        TextColumn("[bold blue]{task.description}", justify="left"),
+        "[progress.description]{task.description}",
         BarColumn(),
-        MofNCompleteColumn(),
         "[progress.percentage]{task.percentage:>3.1f}%",
-        TimeRemainingColumn()) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
-        task = progress.add_task("[green]获取完本小说列表...", total=num_page)
-        for i in range(num_page):
-            taskList.append(executor.submit(get_books_info,i+1,novel_list,novel_set,progress))
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn()
+        ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
+        task = progress.add_task("[green]获取完本小说列表", total=num_page)
+        for i in range(start_num,num_page):
+            taskList.append(executor.submit(get_books_info,i+1,novel_set,progress))
             # 当一个线程完成时，更新进度条
         for _ in as_completed(taskList):
-            percent=len(novel_list)/40
+            percent+=1
             progress.update(task, completed=percent)
         wait(taskList, return_when=ALL_COMPLETED)
+        for task in taskList:
+            taskList.extend(task.result())
         progress.update(task, completed=num_page)
     print(f"共获取小说{len(novel_list)}本")
     return novel_list
@@ -51,10 +50,11 @@ def get_books_list_page_num():
     return num_page
 
 # 1-2.获取第i页小说列表
-def get_books_info(i,novel_list,novel_set,progress):
-    task = progress.add_task(f"[blue]获取第{i}页完本小说列表...", total=40)
+def get_books_info(i,novel_set,progress):
+    novel_list=[]
+    task = progress.add_task(f"[blue]获取第{i}页小说列表", total=40)
     url = f"https://www.biqugen.net/quanben/{i}"
-    res = session.get(url)
+    res = session.get(url,timeout=5)
     res.encoding = "gbk"
     soup = BeautifulSoup(res.text, "html.parser")
     items = soup.find("div", id="tlist").find_all("li")
@@ -97,6 +97,7 @@ def get_books_info(i,novel_list,novel_set,progress):
         progress.update(task, advance=1)
     setFlag=False
     progress.update(task, visible=False)
+    return novel_list
 
 # 1-3.获取小说其他信息
 def get_books_other_info(novel)->bool:
@@ -128,12 +129,14 @@ def save_books_list_to_db(novel_list:list):
     # 从元组列表中提取小说名
     overed_novel_list_name=(novel[0] for novel in overed_novel_list)
     with FrameProgress(
-        TextColumn("[bold blue]{task.description}", justify="left"),
+        "[progress.description]{task.description}",
         BarColumn(),
-        MofNCompleteColumn(),
         "[progress.percentage]{task.percentage:>3.1f}%",
-        TimeRemainingColumn()) as progress:
-        task = progress.add_task("小说列表存入数据库...", total=len(novel_list))
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn()
+        ) as progress:
+        task = progress.add_task("小说列表存入数据库", total=len(novel_list))
         # 将小说列表存入数据库
         for novel in novel_list:
             # 如果数据库中已经存在该小说，则跳过
@@ -201,21 +204,23 @@ def reset_books_list_to_db():
     # 删除表books
     cursor.execute('DROP TABLE IF EXISTS books')
     # 创建表books，id:自增主键
-    cursor.execute('''
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS books(
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            book_id INT,
-            book_name VARCHAR(255),
-            book_link VARCHAR(255),
-            book_author VARCHAR(255),
-            book_publish_time VARCHAR(255),
-            write_status VARCHAR(255),
-            file_path VARCHAR(255),
-            popularity VARCHAR(255),
-            intro TEXT,
-            abnormal BOOLEAN DEFAULT FALSE
+            id INT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键',
+            book_id INT COMMENT '笔趣阁小说id' not null,
+            book_name VARCHAR(255) COMMENT '小说名' not null,
+            book_link VARCHAR(255) COMMENT '小说链接' not null,
+            book_author VARCHAR(255) COMMENT '小说作者',
+            book_publish_time VARCHAR(255) COMMENT '小说发布时间',
+            write_status VARCHAR(255) COMMENT '小说连载状态',
+            file_path VARCHAR(255) COMMENT '小说文件路径',
+            popularity VARCHAR(255) COMMENT '小说人气',
+            intro TEXT COMMENT '小说简介',
+            abnormal BOOLEAN DEFAULT FALSE COMMENT '是否异常'
         )
-    ''')
+    """
+    )
     db.commit()
     print("数据库表books重置成功")
 
@@ -233,15 +238,6 @@ def get_books_list_from_db():
 # 入口
 if __name__ == "__main__":
     # 全局变量
-    session = requests.session()  # 创建会话
-    maxThread = None  # 最大线程数
-    db=pymysql.connect(host='bj-cynosdbmysql-grp-jrtc8xqu.sql.tencentcdb.com',
-                       user='tutu',
-                       password='1234TTtt',
-                       port=23423,
-                       database='novel',
-                       charset='utf8',
-                       )
     cursor = db.cursor()
     print("开始爬取")
     # reset_books_list_to_db()
