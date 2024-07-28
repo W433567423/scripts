@@ -14,7 +14,7 @@ def get_books_list()->list:
     # 开启线程池
     start_num=0
     num_page = get_books_list_page_num()
-    num_page=50
+    num_page=2
     taskList=[]
     percent=0
     print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
@@ -207,6 +207,8 @@ def save_books_list_to_db(novel_list:list):
 
 # 1-5.重置数据库表books
 def reset_books_list_to_db():
+    db.connect()  # 连接
+    cursor = db.cursor()  # 创建游标
     # 删除表books
     cursor.execute('DROP TABLE IF EXISTS books')
     # 创建表books，id:自增主键
@@ -229,13 +231,10 @@ def reset_books_list_to_db():
     )
     db.commit()
     print("数据库表books重置成功")
+    cursor.close()
+    db.close()
 
 
-# 2.从数据库中获取小说列表
-def get_books_list_from_db():
-    cursor.execute('SELECT * FROM books')
-    novel_list = cursor.fetchall()
-    return novel_list
 
 # 3.获取小说内容
 

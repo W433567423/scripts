@@ -6,8 +6,8 @@ from get_chapter import get_chapters
 
 # 1-5.重置数据库表books
 def reset_books_list_to_db():
+    db.connect()
     cursor = db.cursor()
-
     # 删除表books
     cursor.execute("DROP TABLE IF EXISTS books")
     # 创建表books，id:自增主键
@@ -36,6 +36,7 @@ def reset_books_list_to_db():
 
 # 2.从数据库中获取所有小说列表
 def get_books_list_from_db():
+    db.connect()
     cursor = db.cursor()
     novel_list = []
     novel = {
@@ -76,6 +77,7 @@ def get_books_list_from_db():
 
 # 3.获取没下载的小说
 def get_download_books_list_from_db() -> list:
+    db.connect()
     cursor = db.cursor()
     novel_list = []
     novel = {
