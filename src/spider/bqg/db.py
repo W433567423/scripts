@@ -1,12 +1,11 @@
-from global_config import db, FrameProgress
+from global_config import conn, FrameProgress
 from rich.progress import BarColumn, MofNCompleteColumn, TimeRemainingColumn
 
 
 # 从数据库获取小说列表
 def get_books_list_from_db() -> list:
-    global db
-    db.connect()  # 连接
-    cursor = db.cursor()  # 创建游标
+    global conn
+    cursor = conn.cursor()  # 创建游标
     novel_list = []
     novel = {
         "book_name": "",
@@ -36,15 +35,13 @@ def get_books_list_from_db() -> list:
         novel["is_extra"] = True if item[9] == 1 else False
         novel_list.append(novel)
     cursor.close()
-    db.close()
     return novel_list
 
 
 # 从数据库获取没有intro等信息的小说列表
 def get_no_extra_books_list_from_db() -> list:
-    global db
-    db.connect()  # 连接
-    cursor = db.cursor()  # 创建游标
+    global conn
+    cursor = conn.cursor()  # 创建游标
     novel_list = []
     novel = {
         "book_name": "",
@@ -74,15 +71,15 @@ def get_no_extra_books_list_from_db() -> list:
         novel["is_extra"] = True if item[9] == 1 else False
         novel_list.append(novel)
     cursor.close()
-    db.close()
     return novel_list
 
 
 # 重置数据库表books
 def reset_books_list_to_db() -> None:
-    global db
-    db.connect()  # 连接
-    cursor = db.cursor()  # 创建游标
+    global conn
+    # 查看是否连接成功
+
+    cursor = conn.cursor()  # 创建游标
     # 删除表books
     cursor.execute("DROP TABLE IF EXISTS books")
     # 创建表books，id:自增主键
@@ -103,17 +100,15 @@ def reset_books_list_to_db() -> None:
         )
     """
     )
-    db.commit()
+    conn.commit()
     print("数据库表books重置成功")
     cursor.close()
-    db.close()
 
 
 # 存储小说列表至数据库
 def save_books_list_to_db(novel_list: list) -> None:
-    global db
-    db.connect()  # 连接
-    cursor = db.cursor()  # 创建游标
+    global conn
+    cursor = conn.cursor()  # 创建游标
     # 获取数据库中已有的小说列表(仅获取小说名)
     cursor.execute("SELECT book_name FROM books")
     overed_novel_list = cursor.fetchall()
@@ -172,17 +167,15 @@ def save_books_list_to_db(novel_list: list) -> None:
                         """
                     )
             progress.update(task, advance=1)
-    db.commit()
+    conn.commit()
     cursor.close()
-    db.close()
     print("小说列表存储成功")
 
 
 # 更新小说列表到数据库
 def update_books_list(list: list) -> None:
-    global db
-    db.connect()  # 连接
-    cursor = db.cursor()  # 创建游标
+    global conn
+    cursor = conn.cursor()  # 创建游标
     with FrameProgress(
         "[progress.description]{task.description}",
         BarColumn(),
@@ -222,7 +215,6 @@ def update_books_list(list: list) -> None:
                         WHERE book_id={novel["book_id"]}
                     """
                 )
-    db.commit()
+    conn.commit()
     cursor.close()
-    db.close()
     print("小说列表更新成功")

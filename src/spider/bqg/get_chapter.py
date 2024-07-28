@@ -1,8 +1,10 @@
-from global_config import session
+from global_config import FrameProgress, maxThread, session, headers
 from bs4 import BeautifulSoup
+from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED
 
 
-# 3.获取小说章节数量
+# 获取小说章节数量
 def get_chapters_count(novel: dict):
     url = f"https://www.biqugen.net/book/{novel['book_id']}/"
     res = session.get(url, verify=False)
@@ -18,19 +20,42 @@ def get_chapters_count(novel: dict):
     return count
 
 
-# 3.获取小说章节
+# 获取小说章节
 def get_chapters(novel: dict):
-    url = f"https://www.biqugen.net/book/{novel['book_id']}/"
+    chapters_list = []
     count = get_chapters_count(novel)
-    for i in range(1, count + 1):
-        url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i}.html"
-        res = session.get(url, verify=False)
-        res.encoding = "gbk"
-        res.close()
-        soup = BeautifulSoup(res.text, "html.parser")
-        items = soup.find("dl", class_="zjlist").find_all("dd")
-        for item in items:
-            print(item.find("a").text)
-            print(item.find("a").attrs["href"])
-        print(items[0])
-        exit()
+    with FrameProgress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn(),
+    ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
+        task_list = []
+        task = progress.add_task("获取小说章节", total=count)
+        for i in range(0, count):
+            task_list.append(executor.submit(get_chapters_thread, novel, i))
+        for _ in as_completed(task_list):
+            progress.update(task, completed=1)
+        wait(task_list, return_when=ALL_COMPLETED)
+        for thread_task in task_list:
+            chapters_list.extend(thread_task.result())
+    return chapters_list
+
+
+# 获取小说章节(用于submit)
+def get_chapters_thread(novel: dict, i: int) -> list:
+    chapters_list = []
+    url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i+1}.html"
+    res = session.get(url, verify=False)
+    res.encoding = "gbk"
+    res.close()
+    soup = BeautifulSoup(res.text, "html.parser")
+    items = soup.find("dl", class_="zjlist").find_all("dd")
+    for item in items:
+        chapter = {}
+        chapter["title"] = item.find("a").text
+        chapter["url"] = item.find("a").attrs["href"]
+        chapters_list.append(chapter)
+    return chapters_list

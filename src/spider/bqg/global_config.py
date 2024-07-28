@@ -3,6 +3,9 @@ import pymysql
 import requests.adapters
 from rich.panel import Panel
 from rich.progress import Progress
+from rich.console import Console
+
+console = Console()
 
 
 class FrameProgress(Progress):
@@ -20,7 +23,7 @@ requests.adapters.DEFAULT_RETRIES = 3  # 重试次数
 session = requests.session()  # 创建会话
 session.keep_alive = False  # 关闭多余连接
 
-db = pymysql.connect(
+conn = pymysql.connect(
     host="bj-cynosdbmysql-grp-jrtc8xqu.sql.tencentcdb.com",
     user="tutu",
     password="1234TTtt",
@@ -28,3 +31,5 @@ db = pymysql.connect(
     database="novel",
     charset="utf8",
 )  # 连接数据库
+
+console.log("🚀 ~ conn.get_server_info():", conn.get_server_info())
