@@ -13,10 +13,11 @@ def get_books_list()->list:
     # 获取每一页的小说列表
     # 开启线程池
     start_num=0
-    # num_page = get_books_list_page_num()
-    num_page=100
+    num_page = get_books_list_page_num()
+    # num_page=50
     taskList=[]
     percent=0
+    print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
     with FrameProgress(
         "[progress.description]{task.description}",
         BarColumn(),
@@ -33,8 +34,8 @@ def get_books_list()->list:
             percent+=1
             progress.update(task, completed=percent)
         wait(taskList, return_when=ALL_COMPLETED)
-        for task in taskList:
-            taskList.extend(task.result())
+        for thread_task in taskList:
+            novel_list.extend(thread_task.result())
         progress.update(task, completed=num_page)
     print(f"共获取小说{len(novel_list)}本")
     return novel_list
@@ -42,11 +43,10 @@ def get_books_list()->list:
 # 1-1.获取小说列表页数
 def get_books_list_page_num():
     url = "https://www.biqugen.net/quanben/"
-    res = session.get(url)
+    res = session.get(url,timeout=1)
     res.encoding = "gbk"
     soup = BeautifulSoup(res.text, "html.parser")
     num_page = int(soup.find("div", class_="articlepage").find("a", class_="last").text)
-    print(f"完本小说列表总页数: {num_page},每页40本小说")
     return num_page
 
 # 1-2.获取第i页小说列表
@@ -54,7 +54,7 @@ def get_books_info(i,novel_set,progress):
     novel_list=[]
     task = progress.add_task(f"[blue]获取第{i}页小说列表", total=40)
     url = f"https://www.biqugen.net/quanben/{i}"
-    res = session.get(url,timeout=5)
+    res = session.get(url,timeout=5,verify=False)
     res.encoding = "gbk"
     soup = BeautifulSoup(res.text, "html.parser")
     items = soup.find("div", id="tlist").find_all("li")
@@ -102,7 +102,7 @@ def get_books_info(i,novel_set,progress):
 # 1-3.获取小说其他信息
 def get_books_other_info(novel)->bool:
     url = f"https://www.biqugen.net/book/{novel["book_id"]}/"
-    res = session.get(url)
+    res = session.get(url,timeout=5,verify=False)
     res.encoding = "gbk"
     soup = BeautifulSoup(res.text, "html.parser")
     info = soup.find("div", id="info")

@@ -100,6 +100,7 @@ if __name__ == "__main__":
     )
     cursor = db.cursor()
     print("开始爬取")
+    # reset_books_list_to_db()
     novel_list = get_books_list_from_db()
     print(novel_list[:5])
     cursor.close()

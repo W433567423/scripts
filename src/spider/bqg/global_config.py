@@ -10,6 +10,7 @@ class FrameProgress(Progress):
 
 
 # 全局变量
+requests.packages.urllib3.disable_warnings()
 session = requests.session()  # 创建会话
 maxThread = None  # 最大线程数
 db = pymysql.connect(
