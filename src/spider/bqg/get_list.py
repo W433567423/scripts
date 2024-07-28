@@ -13,8 +13,8 @@ def get_books_list()->list:
     # 获取每一页的小说列表
     # 开启线程池
     start_num=0
-    num_page = get_books_list_page_num()
-    # num_page=50
+    # num_page = get_books_list_page_num()
+    num_page=200
     taskList=[]
     percent=0
     print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")

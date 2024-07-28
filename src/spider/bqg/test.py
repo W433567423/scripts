@@ -60,28 +60,37 @@ def get_books_list_from_db():
         "intro": "",
         "abnormal": False,
     }
-    # 需要获取的值：id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal
-    cursor.execute("SELECT * FROM books")
+    # 需要获取的值：id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path
+    cursor.execute(
+        "SELECT id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path FROM books"
+    )
     db_list = cursor.fetchall()
     print("获取数据库中的小说列表成功")
     with FrameProgress() as progress:
         task = progress.add_task("转化为novel_list", total=len(db_list))
         for db in db_list:
+            novel["id"] = db[0]
             novel["book_id"] = db[1]
             novel["book_name"] = db[2]
             novel["book_link"] = db[3]
             novel["book_author"] = db[4]
-            novel["book_publish_time"] = db[5]
-            novel["write_status"] = db[6]
-            novel["popularity"] = db[7]
-            novel["intro"] = db[8]
-            novel["abnormal"] = db[9]
+            novel["write_status"] = db[5]
+            novel["popularity"] = db[6]
+            novel["intro"] = db[7]
+            novel["abnormal"] = db[8]
+            novel["file_path"] = db[9]
             novel_list.append(novel)
             progress.update(task, advance=1)
+            # 等待0.001秒
+            time.sleep(0.001)
     return novel_list
 
 
-# 3.获取小说内容
+# 3.获取小说章节
+def get_chapters():
+
+    pass
+
 
 # 4.保存小说内容
 
@@ -99,9 +108,8 @@ if __name__ == "__main__":
         charset="utf8",
     )
     cursor = db.cursor()
-    print("开始爬取")
     # reset_books_list_to_db()
     novel_list = get_books_list_from_db()
-    print(novel_list[:5])
+    print(novel_list[5])
     cursor.close()
     db.close()
