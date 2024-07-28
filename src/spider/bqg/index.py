@@ -17,14 +17,15 @@ if __name__ == "__main__":
     * 0. 重置数据库books表
     * 1. 从网站更新所有的小说列表
     * 2. 从网站更新[red]异常[black]的小说列表
-"""
+""",
+        title="小说爬虫菜单",
     )
     # 显示panel
     console.print(menu)
     # 选择功能
-    # choice = input("请输入功能编号：")
+    choice = input("请输入功能编号：")
     # 控制台自动输入 1
-    choice = "1"
+    # choice = "1"
     match choice:
         case "0":
             reset_books_list_to_db()

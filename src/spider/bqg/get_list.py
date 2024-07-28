@@ -12,9 +12,9 @@ def get_books_list()->list:
     novel_list = []
     # 获取每一页的小说列表
     # 开启线程池
-    start_num=0
-    num_page = get_books_list_page_num()
-    # num_page=100
+    start_num=399
+    # num_page = get_books_list_page_num()
+    num_page=500
     taskList=[]
     percent=0
     print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
@@ -26,7 +26,7 @@ def get_books_list()->list:
         "[cyan]⏳",
         TimeRemainingColumn()
         ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
-        task = progress.add_task("[green]获取所有小说", total=num_page)
+        task = progress.add_task("[green]获取所有小说", total=num_page-start_num)
         for i in range(start_num,num_page):
             taskList.append(executor.submit(get_books_info,i+1,novel_set,progress))
             # 当一个线程完成时，更新进度条
