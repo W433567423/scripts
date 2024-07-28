@@ -40,8 +40,8 @@ def get_books_list_from_db() -> list:
     return novel_list
 
 
-# 从数据库获取异常的小说列表
-def get_abnormal_books_list_from_db() -> list:
+# 从数据库获取没有intro等信息的小说列表
+def get_no_extra_books_list_from_db() -> list:
     global db
     db.connect()  # 连接
     cursor = db.cursor()  # 创建游标
@@ -193,7 +193,9 @@ def update_books_list(list: list) -> None:
     ) as progress:
         task = progress.add_task("更新小说列表", total=len(list))
         for novel in list:
-            # 捕获异常
+            if novel["is_extra"] == None:
+                continue
+            progress.update(task, advance=1)
             try:
                 cursor.execute(
                     f"""
@@ -220,7 +222,6 @@ def update_books_list(list: list) -> None:
                         WHERE book_id={novel["book_id"]}
                     """
                 )
-            progress.update(task, advance=1)
     db.commit()
     cursor.close()
     db.close()

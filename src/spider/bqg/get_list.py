@@ -1,4 +1,4 @@
-from global_config import maxThread,session,db,headers,FrameProgress
+from global_config import FrameProgress,maxThread,session,headers
 from bs4 import BeautifulSoup
 from utils import normalize_novel_name,normalize_intro
 from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn
@@ -75,11 +75,7 @@ def get_books_info_thread(i:int,novel_set:list)->list:
             "book_id": 0,
             "book_author": "",
             "book_publish_time": "",
-            "write_status": "",
-            "popularity": '',
-            "intro": "",
-            "abnormal": False
-        }
+            }
         novel["book_name"] = normalize_novel_name(
             item.find("div", class_="zp").find("a", class_="name").text
         )
@@ -119,23 +115,23 @@ def get_books_other_info(novel_list:list)->list:
             task_list.append(executor.submit(get_books_other_info_thread,novel))
         for _ in as_completed(task_list):
             progress.update(task, advance=1)
+        wait(task_list, return_when=ALL_COMPLETED)
     return novel_list
 
 # 获取某本小说其他信息(用于submit)
-def get_books_other_info_thread(novel:dict)->bool:
+def get_books_other_info_thread(novel:dict)->None:
     url = f"http://www.biqugen.net/book/{novel["book_id"]}/"
     try:
         res = session.get(url,headers=headers,timeout=3,verify=False)
-    except Exception as e:
+    except Exception:
         print (f"{url}访问失败")
-        return False
+        return 
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     info = soup.find("div", id="info")
     if(info==None):
-        novel["abnormal"]=True
-        return False
+        return
     # 获取小说连载状态
     popularity = info.find("span", class_="blue").text.split("：")[1]
     # 获取小说人气
@@ -146,7 +142,7 @@ def get_books_other_info_thread(novel:dict)->bool:
     novel["intro"] = normalize_intro(intro)
     novel["write_status"] = '已完结' if write_status=="已完成" else "连载中"
     novel["popularity"] = popularity
-    return True
+    novel["is_extra"] = True
 
 
 # ---------------------------------------------------
