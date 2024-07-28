@@ -255,8 +255,8 @@ def main():
 
     # DONE 下载完本小说
     print(f"\033[1;32m---开始获取所有完本小说列表...---\033[0m\n")
-    novelList = load_local_list()
-    # novelList = get_final_books_list()
+    # novelList = load_local_list()
+    novelList = get_final_books_list()
     print(
         f"已下载:{len(overList)},所有列表:{len(novelList)},异常列表:{len(get_e_files(rootDir))}",
     )

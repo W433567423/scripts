@@ -1,5 +1,6 @@
-from global_config import conn, FrameProgress
+from global_config import conn, console, FrameProgress
 from rich.progress import BarColumn, MofNCompleteColumn, TimeRemainingColumn
+import time
 
 
 # 从数据库获取小说列表
@@ -78,7 +79,6 @@ def get_no_extra_books_list_from_db() -> list:
 def reset_books_list_to_db() -> None:
     global conn
     # 查看是否连接成功
-
     cursor = conn.cursor()  # 创建游标
     # 删除表books
     cursor.execute("DROP TABLE IF EXISTS books")
@@ -101,7 +101,7 @@ def reset_books_list_to_db() -> None:
     """
     )
     conn.commit()
-    print("数据库表books重置成功")
+    console.log("数据库表books重置成功")
     cursor.close()
 
 
@@ -110,10 +110,12 @@ def save_books_list_to_db(novel_list: list) -> None:
     global conn
     cursor = conn.cursor()  # 创建游标
     # 获取数据库中已有的小说列表(仅获取小说名)
-    cursor.execute("SELECT book_name FROM books")
+    cursor.execute("SELECT book_id FROM books")
     overed_novel_list = cursor.fetchall()
-    # 从元组列表中提取小说名
-    overed_novel_list_name = (novel[0] for novel in overed_novel_list)
+    # 从元组列表中提取小说id为元组
+    overed_novel_list_id = []
+    for novel in overed_novel_list:
+        overed_novel_list_id.append(novel[0])
     with FrameProgress(
         "[progress.description]{task.description}",
         BarColumn(),
@@ -126,7 +128,7 @@ def save_books_list_to_db(novel_list: list) -> None:
         # 将小说列表存入数据库
         for novel in novel_list:
             # 如果数据库中已经存在该小说，则跳过
-            if novel["book_name"] not in overed_novel_list_name:
+            if int(novel["book_id"]) not in overed_novel_list_id:
                 # 捕获异常
                 try:
                     cursor.execute(
@@ -169,7 +171,7 @@ def save_books_list_to_db(novel_list: list) -> None:
             progress.update(task, advance=1)
     conn.commit()
     cursor.close()
-    print("小说列表存储成功")
+    console.log("小说列表存储成功")
 
 
 # 更新小说列表到数据库
@@ -217,4 +219,4 @@ def update_books_list(list: list) -> None:
                 )
     conn.commit()
     cursor.close()
-    print("小说列表更新成功")
+    console.log("小说列表更新成功")

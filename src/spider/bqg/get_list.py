@@ -1,14 +1,13 @@
-from global_config import FrameProgress,maxThread,session,headers
+from global_config import FrameProgress,maxThread,session,console
 from bs4 import BeautifulSoup
 from utils import normalize_novel_name,normalize_intro
 from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor, as_completed,wait, ALL_COMPLETED
 
-
 # 获取小说列表页数
 def get_books_list_page_num()->int:
-    url = "http://www.biqugen.net/quanben/"
-    res = session.get(url,headers=headers,timeout=3)
+    url = "https://www.biqugen.net/quanben/"
+    res = session.get(url)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
@@ -23,10 +22,10 @@ def get_books_list()->list:
     # 获取每一页的小说列表
     # 开启线程池
     start_num=0
-    num_page = get_books_list_page_num()/2
+    num_page = get_books_list_page_num()
     taskList=[]
     percent=0
-    print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
+    console.log(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
     with FrameProgress(
         "[progress.description]{task.description}",
         BarColumn(),
@@ -35,8 +34,7 @@ def get_books_list()->list:
         "[cyan]⏳",
         TimeRemainingColumn()
         ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
-        task = progress.add_task("[green]从网站获取小说列表", total=num_page-start_num)
-        # for i in [497,505,504,496]:
+        task = progress.add_task("从网站获取小说列表", total=num_page-start_num)
         for i in range(start_num,num_page):
             taskList.append(executor.submit(get_books_info_thread,i+1,novel_set))
             # 当一个线程完成时，更新进度条
@@ -47,24 +45,24 @@ def get_books_list()->list:
         for thread_task in taskList:
             novel_list.extend(thread_task.result())
         progress.update(task, completed=num_page-start_num)
-    print(f"共获取小说{len(novel_list)}本")
+    console.log(f"共获取小说{len(novel_list)}本")
     return novel_list
 
 # 获取第i页小说列表(用于submit)
 def get_books_info_thread(i:int,novel_set:list)->list:
     novel_list=[]
-    url = f"http://www.biqugen.net/quanben/{i}"
+    url = f"https://www.biqugen.net/quanben/{i}"
     try:
-        res = session.get(url,headers=headers,timeout=3,verify=False)
+        res = session.get(url)
     except Exception as e:     
-        print(f"第{i}页获取失败,http://www.biqugen.net/quanben/{i}")
+        print(f"第{i}页获取失败,https://www.biqugen.net/quanben/{i}")
         return novel_list
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     tlist = soup.find("div", id="tlist")
     if tlist==None:
-        print(f"第{i}页获取失败,http://www.biqugen.net/quanben/{i}")
+        print(f"第{i}页获取失败,https://www.biqugen.net/quanben/{i}")
         return novel_list
     items=tlist.find_all("li")
     setFlag=False # 用于判断是否已经设置了total
@@ -120,9 +118,9 @@ def get_books_other_info(novel_list:list)->list:
 
 # 获取某本小说其他信息(用于submit)
 def get_books_other_info_thread(novel:dict)->None:
-    url = f"http://www.biqugen.net/book/{novel["book_id"]}/"
+    url = f"https://www.biqugen.net/book/{novel["book_id"]}/"
     try:
-        res = session.get(url,headers=headers,timeout=3,verify=False)
+        res = session.get(url)
     except Exception:
         print (f"{url}访问失败")
         return 
