@@ -14,7 +14,6 @@ def get_books_list_page_num()->int:
     num_page = int(soup.find("div", class_="articlepage").find("a", class_="last").text)
     return num_page
 
-
 # 获取小说列表
 def get_books_list()->list:
     novel_set = set() # 用于存储小说名字，避免重复

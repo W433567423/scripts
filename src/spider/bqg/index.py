@@ -43,9 +43,8 @@ if __name__ == "__main__":
                 novel_list = get_books_list()
                 save_books_list_to_db(novel_list)
             case "3":
-                console.log("🚀 ~ raw_list:", raw_list)
+                raw_list = get_no_extra_books_list_from_db()
                 novel_list = get_books_other_info(raw_list)
-                console.log("🚀 ~ novel_list:", novel_list)
                 update_books_list(novel_list)
             case "4":
                 raw_list = get_books_list_from_db()
