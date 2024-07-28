@@ -1,4 +1,4 @@
-from global_config import maxThread,session,cursor,db,FrameProgress
+from global_config import maxThread,session,db,FrameProgress
 from bs4 import BeautifulSoup
 from utils import normalize_novel_name
 from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn
@@ -13,8 +13,8 @@ def get_books_list()->list:
     # 获取每一页的小说列表
     # 开启线程池
     start_num=0
-    # num_page = get_books_list_page_num()
-    num_page=200
+    num_page = get_books_list_page_num()
+    num_page=50
     taskList=[]
     percent=0
     print(f"爬取的页数范围页数: {start_num+1}-{num_page},每页40本小说")
@@ -43,8 +43,9 @@ def get_books_list()->list:
 # 1-1.获取小说列表页数
 def get_books_list_page_num():
     url = "https://www.biqugen.net/quanben/"
-    res = session.get(url,timeout=1)
+    res = session.get(url)
     res.encoding = "gbk"
+    res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     num_page = int(soup.find("div", class_="articlepage").find("a", class_="last").text)
     return num_page
@@ -54,8 +55,9 @@ def get_books_info(i,novel_set,progress):
     novel_list=[]
     task = progress.add_task(f"[blue]获取第{i}页", total=40)
     url = f"https://www.biqugen.net/quanben/{i}"
-    res = session.get(url,timeout=5,verify=False)
+    res = session.get(url,verify=False)
     res.encoding = "gbk"
+    res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     items = soup.find("div", id="tlist").find_all("li")
     setFlag=False # 用于判断是否已经设置了total
@@ -102,8 +104,9 @@ def get_books_info(i,novel_set,progress):
 # 1-3.获取小说其他信息
 def get_books_other_info(novel)->bool:
     url = f"https://www.biqugen.net/book/{novel["book_id"]}/"
-    res = session.get(url,timeout=5,verify=False)
+    res = session.get(url,verify=False)
     res.encoding = "gbk"
+    res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     info = soup.find("div", id="info")
     if(info==None):
@@ -123,6 +126,8 @@ def get_books_other_info(novel)->bool:
     
 # 1-4.存储小说列表至数据库
 def save_books_list_to_db(novel_list:list):
+    db.connect()  # 连接
+    cursor = db.cursor()  # 创建游标
     # 获取数据库中已有的小说列表(仅获取小说名)
     cursor.execute('SELECT book_name FROM books')
     overed_novel_list = cursor.fetchall()
@@ -196,8 +201,9 @@ def save_books_list_to_db(novel_list:list):
                         ''')
             progress.update(task, advance=1)
     db.commit()
+    cursor.close()
+    db.close()
     print("小说列表存储成功")
-    pass
 
 # 1-5.重置数据库表books
 def reset_books_list_to_db():
@@ -238,10 +244,7 @@ def get_books_list_from_db():
 # 入口
 if __name__ == "__main__":
     # 全局变量
-    cursor = db.cursor()
     print("开始爬取")
     # reset_books_list_to_db()
     novel_list=get_books_list()
     save_books_list_to_db(novel_list)
-    cursor.close()
-    db.close()
