@@ -35,7 +35,8 @@ def get_books_list()->list:
         "[cyan]⏳",
         TimeRemainingColumn()
         ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
-        task = progress.add_task("[green]获取所有小说", total=num_page-start_num)
+        task = progress.add_task("[green]从网站获取小说列表", total=num_page-start_num)
+        # for i in [497,505,504,496]:
         for i in range(start_num,num_page):
             taskList.append(executor.submit(get_books_info_thread,i+1,novel_set))
             # 当一个线程完成时，更新进度条
@@ -55,8 +56,8 @@ def get_books_info_thread(i:int,novel_set:list)->list:
     url = f"http://www.biqugen.net/quanben/{i}"
     try:
         res = session.get(url,headers=headers,timeout=3,verify=False)
-    except Exception as e:
-        print (f"{url }访问失败")
+    except Exception as e:     
+        print(f"第{i}页获取失败,http://www.biqugen.net/quanben/{i}")
         return novel_list
     res.encoding = "gbk"
     res.close()

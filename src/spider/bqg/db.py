@@ -1,7 +1,5 @@
 from global_config import db, FrameProgress
 from rich.progress import BarColumn, MofNCompleteColumn, TimeRemainingColumn
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from global_config import maxThread
 
 
 # 从数据库获取小说列表
@@ -11,7 +9,6 @@ def get_books_list_from_db() -> list:
     cursor = db.cursor()  # 创建游标
     novel_list = []
     novel = {
-        "book_id": 0,
         "book_name": "",
         "book_link": "",
         "book_author": "",
@@ -20,23 +17,23 @@ def get_books_list_from_db() -> list:
         "popularity": "",
         "intro": "",
         "abnormal": False,
+        "is_extra": False,
     }
-    # 需要获取的值：id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path
     cursor.execute(
-        "SELECT id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path FROM books"
+        "SELECT book_id,book_name,book_link,book_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM books"
     )
     db_list = cursor.fetchall()
     for item in db_list:
-        novel["id"] = item[0]
-        novel["book_id"] = item[1]
-        novel["book_name"] = item[2]
-        novel["book_link"] = item[3]
-        novel["book_author"] = item[4]
-        novel["write_status"] = item[5]
-        novel["popularity"] = item[6]
-        novel["intro"] = item[7]
+        novel["book_id"] = item[0]
+        novel["book_name"] = item[1]
+        novel["book_link"] = item[2]
+        novel["book_author"] = item[3]
+        novel["write_status"] = item[4]
+        novel["popularity"] = item[5]
+        novel["intro"] = item[6]
+        novel["file_path"] = item[7]
         novel["abnormal"] = True if item[8] == 1 else False
-        novel["file_path"] = item[9]
+        novel["is_extra"] = True if item[9] == 1 else False
         novel_list.append(novel)
     cursor.close()
     db.close()
@@ -50,7 +47,6 @@ def get_abnormal_books_list_from_db() -> list:
     cursor = db.cursor()  # 创建游标
     novel_list = []
     novel = {
-        "book_id": 0,
         "book_name": "",
         "book_link": "",
         "book_author": "",
@@ -59,23 +55,23 @@ def get_abnormal_books_list_from_db() -> list:
         "popularity": "",
         "intro": "",
         "abnormal": False,
+        "is_extra": False,
     }
-    # 需要获取的值：id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path
     cursor.execute(
-        "SELECT id,book_id,book_name,book_link,book_author,write_status,popularity,intro,abnormal,file_path FROM books WHERE abnormal=TRUE"
+        "SELECT book_id,book_name,book_link,book_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM books WHERE abnormal=TRUE"
     )
     db_list = cursor.fetchall()
     for item in db_list:
-        novel["id"] = item[0]
-        novel["book_id"] = item[1]
-        novel["book_name"] = item[2]
-        novel["book_link"] = item[3]
-        novel["book_author"] = item[4]
-        novel["write_status"] = item[5]
-        novel["popularity"] = item[6]
-        novel["intro"] = item[7]
+        novel["book_id"] = item[0]
+        novel["book_name"] = item[1]
+        novel["book_link"] = item[2]
+        novel["book_author"] = item[3]
+        novel["write_status"] = item[4]
+        novel["popularity"] = item[5]
+        novel["intro"] = item[6]
+        novel["file_path"] = item[7]
         novel["abnormal"] = True if item[8] == 1 else False
-        novel["file_path"] = item[9]
+        novel["is_extra"] = True if item[9] == 1 else False
         novel_list.append(novel)
     cursor.close()
     db.close()
@@ -93,8 +89,7 @@ def reset_books_list_to_db() -> None:
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS books(
-            id INT AUTO_INCREMENT PRIMARY KEY COMMENT '自增主键',
-            book_id INT COMMENT '笔趣阁小说id' not null,
+            book_id INT PRIMARY KEY COMMENT '笔趣阁小说id',
             book_name VARCHAR(255) COMMENT '小说名' not null,
             book_link VARCHAR(255) COMMENT '小说链接' not null,
             book_author VARCHAR(255) COMMENT '小说作者',
@@ -103,7 +98,8 @@ def reset_books_list_to_db() -> None:
             file_path VARCHAR(255) COMMENT '小说文件路径',
             popularity VARCHAR(255) COMMENT '小说人气',
             intro TEXT COMMENT '小说简介',
-            abnormal BOOLEAN DEFAULT FALSE COMMENT '是否异常'
+            abnormal BOOLEAN DEFAULT FALSE COMMENT '是否异常',
+            is_extra BOOLEAN DEFAULT FALSE COMMENT '是否已添加额外信息(连载情况、人气、评分等)'
         )
     """
     )
@@ -145,26 +141,18 @@ def save_books_list_to_db(novel_list: list) -> None:
                                 book_name,
                                 book_link,
                                 book_author,
-                                book_publish_time,
-                                write_status,
-                                popularity,
-                                intro,
-                                abnormal
+                                book_publish_time
                             )
                             VALUES(
                                 {novel["book_id"]},
                                 "{novel["book_name"]}",
                                 "{novel["book_link"]}",
                                 "{novel["book_author"]}",
-                                "{novel["book_publish_time"]}",
-                                "{novel["write_status"]}",
-                                "{novel["popularity"]}",
-                                "{novel["intro"]}",
-                                {novel["abnormal"]}
+                                "{novel["book_publish_time"]}"
                             )
                         """
                     )
-                except Exception as e:
+                except Exception:
                     print(
                         f"""
                             INSERT INTO books(
@@ -172,22 +160,14 @@ def save_books_list_to_db(novel_list: list) -> None:
                                 book_name,
                                 book_link,
                                 book_author,
-                                book_publish_time,
-                                write_status,
-                                popularity,
-                                intro,
-                                abnormal
+                                book_publish_time
                             )
                             VALUES(
                                 {novel["book_id"]},
                                 "{novel["book_name"]}",
                                 "{novel["book_link"]}",
                                 "{novel["book_author"]}",
-                                "{novel["book_publish_time"]}",
-                                "{novel["write_status"]}",
-                                "{novel["popularity"]}",
-                                "{novel["intro"]}",
-                                {novel["abnormal"]}
+                                "{novel["book_publish_time"]}"
                             )
                         """
                     )
@@ -219,33 +199,25 @@ def update_books_list(list: list) -> None:
                     f"""
                         UPDATE books
                         SET
-                            book_id={novel["book_id"]},
-                            book_name="{novel["book_name"]}",
-                            book_link="{novel["book_link"]}",
-                            book_author="{novel["book_author"]}",
-                            book_publish_time="{novel["book_publish_time"]}",
                             write_status="{novel["write_status"]}",
                             popularity="{novel["popularity"]}",
                             intro="{novel["intro"]}",
-                            abnormal={novel["abnormal"]}
-                        WHERE id={novel["id"]}
+                            abnormal={novel["abnormal"]},
+                            is_extra={True}
+                        WHERE book_id={novel["book_id"]}
                     """
                 )
-            except Exception as e:
+            except Exception:
                 print(
                     f"""
                         UPDATE books
                         SET
-                            book_id={novel["book_id"]},
-                            book_name="{novel["book_name"]}",
-                            book_link="{novel["book_link"]}",
-                            book_author="{novel["book_author"]}",
-                            book_publish_time="{novel["book_publish_time"]}",
                             write_status="{novel["write_status"]}",
                             popularity="{novel["popularity"]}",
                             intro="{novel["intro"]}",
-                            abnormal={novel["abnormal"]}
-                        WHERE id={novel["id"]}
+                            abnormal={novel["abnormal"]},
+                            is_extra={True}
+                        WHERE book_id={novel["book_id"]}
                     """
                 )
             progress.update(task, advance=1)
