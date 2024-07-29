@@ -11,43 +11,17 @@ def get_chapters_count(novel: dict):
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
+    form_control=soup.find("select", class_="form-control")
+    if form_control==None:
+        return 1
     count = int(
-        (soup.find("select", class_="form-control").find_all("option")[-1].text)
+        form_control.find_all("option")[-1].text
         .split("第")[1]
         .split("页")[0]
     )
+    print("🚀 ~ count:", count)
 
     return count
-
-
-# 获取小说章节
-# def get_chapters(novel: dict):
-#     chapters_list = []
-#     chapters_count = get_chapters_count(novel)
-#     with FrameProgress(
-#         "[progress.description]{task.description}",
-#         BarColumn(),
-#         "[progress.percentage]{task.percentage:>3.1f}%",
-#         MofNCompleteColumn(),
-#         "[cyan]⏳",
-#         TimeRemainingColumn(),
-#     ) as progress, ThreadPoolExecutor(max_workers=maxThread) as executor:
-#         task_list = []
-#         print("🚀 ~ novel:", novel)
-
-#         task = progress.add_task("获取小说章节", total=chapters_count)
-
-#         for i in range(0, chapters_count):
-#             task_list.append(executor.submit(get_chapters_thread, novel, i))
-#         for _ in as_completed(task_list):
-#             progress.update(task, advance=1)
-#         wait(task_list, return_when=ALL_COMPLETED)
-#         for thread_task in task_list:
-#             chapters_list.extend(thread_task.result())
-#         print("🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀 🚀" )
-#         for i in range(0, len(chapters_list)):
-#             chapters_list[i]["chapter_order"] = i + 1
-#     return chapters_list
 
 
 # 获取小说章节(用于submit)
@@ -76,6 +50,8 @@ def get_chapters_thread(novel: dict,progress: any) -> list:
             chapter["chapter_id"] = int(item.find("a").attrs["href"].split(".")[0])
             chapters_list.append(chapter)
         progress.update(task, advance=1)
+    progress.update(task, visible=False)
+
     for i in range(0, len(chapters_list)):
         chapters_list[i]["chapter_order"] = i + 1
     novel["chapters_list"] = chapters_list

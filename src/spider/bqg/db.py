@@ -67,7 +67,7 @@ def get_no_chapter_books_list_from_db() -> list:
     novel_list = []
 
     cursor.execute(
-        "SELECT book_id,book_name FROM books WHERE is_chapter=0 And abnormal=0"
+        "SELECT book_id,book_name FROM books WHERE is_chapter=0 And abnormal=0 ORDER BY book_id ASC"
     )
     db_list = cursor.fetchall()
     for item in db_list:
@@ -144,6 +144,8 @@ def reset_chapters_to_db() -> None:
         )
     """
     )
+    # 更新books表is_chapter字段
+    cursor.execute("UPDATE books SET is_chapter=False")
     conn.commit()
     console.log("数据库表chapters重置成功")
     cursor.close()
@@ -304,43 +306,52 @@ def save_chapters_list_to_db(novel_list: list) -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
-    for novel in novel_list:
-        cursor.executemany(
-            """
-                INSERT INTO chapters(
-                    chapter_id,
-                    chapter_name,
-                    chapter_order,
-                    book_id
-                )
-                VALUES(
-                    %s,
-                    %s,
-                    %s,
-                    %s
-                )
-            """,
-            [
-                (
-                    chapter["chapter_id"],
-                    chapter["chapter_name"],
-                    chapter["chapter_order"],
-                    novel["book_id"],
-                )
-                for chapter in novel["chapters_list"]
-            ],
-        )
-        # 更新books表is_chapter字段
-        cursor.execute(
-            """
-                UPDATE books
-                SET
-                    is_chapter=True
-                WHERE book_id=%s
-            """,
-            (novel["book_id"],),
-        )
-
-    conn.commit()
-    cursor.close()
-    console.log("章节列表存储成功")
+    with FrameProgress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("存储章节列表", total=len(novel_list))
+        for novel in novel_list:
+            cursor.executemany(
+                """
+                    INSERT INTO chapters(
+                        chapter_id,
+                        chapter_name,
+                        chapter_order,
+                        book_id
+                    )
+                    VALUES(
+                        %s,
+                        %s,
+                        %s,
+                        %s
+                    )
+                """,
+                [
+                    (
+                        chapter["chapter_id"],
+                        chapter["chapter_name"],
+                        chapter["chapter_order"],
+                        novel["book_id"],
+                    )
+                    for chapter in novel["chapters_list"]
+                ],
+            )
+            # 更新books表is_chapter字段
+            cursor.execute(
+                """
+                    UPDATE books
+                    SET
+                        is_chapter=True
+                    WHERE book_id=%s
+                """,
+                (novel["book_id"],),
+            )
+            progress.update(task, advance=1)
+        conn.commit()
+        cursor.close()
+        console.log("章节列表存储成功")

@@ -56,7 +56,7 @@ if __name__ == "__main__":
                 novel_list = get_books_other_info(raw_list)
                 update_books_list(novel_list)
             case "4":
-                raw_list = get_no_chapter_books_list_from_db()[:10]
+                raw_list = get_no_chapter_books_list_from_db()[:1]
                 get_chapters_list(raw_list)
                 save_chapters_list_to_db(raw_list)
             case "999":
