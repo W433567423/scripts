@@ -1,4 +1,4 @@
-from global_config import FrameProgress, maxThread, session, headers
+from global_config import FrameProgress, maxThread, session, console
 from bs4 import BeautifulSoup
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED
@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPL
 # 获取小说章节数量
 def get_chapters_count(novel: dict):
     url = f"https://www.biqugen.net/book/{novel['book_id']}/"
-    res = session.get(url, verify=False)
+    res = session.get(url)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
@@ -37,7 +37,7 @@ def get_chapters(novel: dict):
         for i in range(0, count):
             task_list.append(executor.submit(get_chapters_thread, novel, i))
         for _ in as_completed(task_list):
-            progress.update(task, completed=1)
+            progress.update(task, advance=1)
         wait(task_list, return_when=ALL_COMPLETED)
         for thread_task in task_list:
             chapters_list.extend(thread_task.result())
@@ -48,13 +48,22 @@ def get_chapters(novel: dict):
 def get_chapters_thread(novel: dict, i: int) -> list:
     chapters_list = []
     url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i+1}.html"
-    res = session.get(url, verify=False)
+    try:
+        res = session.get(url)
+    except Exception:
+        console.log("🚀 ~ 访问失败:", url)
+        return chapters_list
+
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     items = soup.find("dl", class_="zjlist").find_all("dd")
+
     for item in items:
         chapter = {}
+        a = item.find("a")
+        if a is None:
+            continue
         chapter["title"] = item.find("a").text
         chapter["url"] = item.find("a").attrs["href"]
         chapters_list.append(chapter)

@@ -37,5 +37,11 @@ def normalize_novel_name(str: str) -> str:
 def normalize_intro(str: str) -> str:
     intro = str
     # 去除\xa0
-    intro = intro.replace("\xa0", "").replace("&amp;", "").replace("#61", "").strip()
+    intro = (
+        intro.replace("\xa0", "")
+        .replace("&amp;", "")
+        .replace("#61", "")
+        .replace('"', "'")
+        .strip()
+    )
     return intro

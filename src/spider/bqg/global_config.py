@@ -14,12 +14,12 @@ class FrameProgress(Progress):
 
 
 # 全局变量
-maxThread = 16  # 最大线程数
+maxThread = 32  # 最大线程数
 requests.packages.urllib3.disable_warnings()  # 关闭警告
 # requests.adapters.DEFAULT_RETRIES = 3  # 重试次数
 session = requests.session()  # 创建会话
 # session.keep_alive = False  # 关闭多余连接
-chunk_size = 1024  # 分片大小
+chunk_size = 512  # 分片大小
 
 # 连接数据库
 conn = pymysql.connect(

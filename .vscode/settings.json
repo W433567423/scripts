@@ -8,6 +8,7 @@
     "bookid",
     "bookinteralid",
     "bookname",
+    "booktag",
     "categoryid",
     "categoryname",
     "categorys",

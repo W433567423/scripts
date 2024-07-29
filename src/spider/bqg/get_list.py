@@ -122,18 +122,20 @@ def get_books_other_info_thread(novel:dict)->None:
     try:
         res = session.get(url)
     except Exception:
-        print (f"{url}访问失败")
-        return 
+        res = session.get(url)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
     info = soup.find("div", id="info")
     if(info==None):
+        novel["abnormal"] = True
+        print(f"{url}获取info失败")
         return
+    booktag=info.find("p",class_="booktag")
     # 获取小说连载状态
-    popularity = info.find("span", class_="blue").text.split("：")[1]
+    popularity = booktag.findAll("span")[0].text.split("：")[1]
     # 获取小说人气
-    write_status = info.find("span", class_="red").text
+    write_status = booktag.findAll("span")[1].text
     # 获取小说简介
     intro = soup.find("div", id="intro").text
     # 去除\xa0
