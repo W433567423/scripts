@@ -1,11 +1,13 @@
 from rich.panel import Panel
 from get_list import get_books_list, get_books_other_info, get_books_other_info_thread
 from get_chapter import (
-    get_chapters,
+    get_chapters_list,
 )
 from db import (
     get_books_list_from_db,
     get_no_extra_books_list_from_db,
+    get_no_chapter_books_list_from_db,
+    save_chapters_list_to_db,
     reset_books_to_db,
     reset_chapters_to_db,
     save_books_list_to_db,
@@ -54,9 +56,9 @@ if __name__ == "__main__":
                 novel_list = get_books_other_info(raw_list)
                 update_books_list(novel_list)
             case "4":
-                raw_list = get_books_list_from_db()[0]
-                chapters_list = get_chapters(raw_list)
-                console.log("🚀 ~ chapters_list:", chapters_list)
+                raw_list = get_no_chapter_books_list_from_db()[:10]
+                get_chapters_list(raw_list)
+                save_chapters_list_to_db(raw_list)
             case "999":
                 raw_list = get_books_list_from_db()
                 console.log("🚀 ~ len(raw_list):", len(raw_list))

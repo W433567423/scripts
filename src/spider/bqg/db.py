@@ -60,20 +60,24 @@ def get_no_extra_books_list_from_db() -> list:
 
 
 # 从数据库获取没有章节信息的小说列表
-def get_no_extra_books_list_from_db() -> list:
+def get_no_chapter_books_list_from_db() -> list:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
     novel_list = []
 
-    cursor.execute("SELECT book_id FROM books WHERE is_chapter=0 And abnormal=0")
+    cursor.execute(
+        "SELECT book_id,book_name FROM books WHERE is_chapter=0 And abnormal=0"
+    )
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {
             "book_id": "",
+            "book_name": "",
             "abnormal": False,
         }
         novel["book_id"] = item[0]
+        novel["book_name"] = item[1]
         novel_list.append(novel)
     cursor.close()
     return novel_list
@@ -145,6 +149,7 @@ def reset_chapters_to_db() -> None:
     cursor.close()
 
 
+# ---------------------小说---------------------
 # 存储小说列表至数据库
 def save_books_list_to_db(novel_list: list) -> None:
     console.log("🚀 ~ 正在存储进数据库")
@@ -290,3 +295,52 @@ def update_books_list(list: list) -> None:
     conn.commit()
     cursor.close()
     console.log("小说列表更新成功")
+
+
+# ---------------------章节---------------------
+# 存储章节列表至数据库
+def save_chapters_list_to_db(novel_list: list) -> None:
+    console.log("🚀 ~ 正在存储进数据库")
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    for novel in novel_list:
+        cursor.executemany(
+            """
+                INSERT INTO chapters(
+                    chapter_id,
+                    chapter_name,
+                    chapter_order,
+                    book_id
+                )
+                VALUES(
+                    %s,
+                    %s,
+                    %s,
+                    %s
+                )
+            """,
+            [
+                (
+                    chapter["chapter_id"],
+                    chapter["chapter_name"],
+                    chapter["chapter_order"],
+                    novel["book_id"],
+                )
+                for chapter in novel["chapters_list"]
+            ],
+        )
+        # 更新books表is_chapter字段
+        cursor.execute(
+            """
+                UPDATE books
+                SET
+                    is_chapter=True
+                WHERE book_id=%s
+            """,
+            (novel["book_id"],),
+        )
+
+    conn.commit()
+    cursor.close()
+    console.log("章节列表存储成功")
