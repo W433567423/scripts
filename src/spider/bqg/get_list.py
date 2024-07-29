@@ -53,7 +53,7 @@ def get_books_info_thread(i:int,novel_set:list)->list:
     url = f"https://www.biqugen.net/quanben/{i}"
     try:
         res = session.get(url)
-    except Exception as e:     
+    except Exception:     
         print(f"第{i}页获取失败,https://www.biqugen.net/quanben/{i}")
         return novel_list
     res.encoding = "gbk"
@@ -83,7 +83,7 @@ def get_books_info_thread(i:int,novel_set:list)->list:
             novel["book_link"] = (
                 item.find("div", class_="zp").find("a", class_="name").attrs["href"]
             )
-            novel["book_id"] = (
+            novel["book_id"] = int(
                 item.find("div", class_="zp")
                 .find("a", class_="name")
                 .attrs["href"]
