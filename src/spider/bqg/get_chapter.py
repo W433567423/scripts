@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPL
 # 获取小说章节数量
 def get_chapters_count(novel: dict):
     url = f"https://www.biqugen.net/book/{novel['book_id']}/"
-    res = session.get(url)
+    res = session.get(url,timeout=5)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
@@ -27,13 +27,13 @@ def get_chapters_count(novel: dict):
 def get_chapters_thread(novel: dict,progress: any) -> list:
     chapter_count = get_chapters_count(novel)
     chapters_list = []
-    task = progress.add_task(f"获取《{novel["book_name"]}》", total=chapter_count)
+    task = progress.add_task(f"《{novel["book_name"]}》", total=chapter_count)
     for i in range(0, chapter_count):
         if novel.get("abnormal"):
             break
         url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i+1}.html"
         try:
-            res = session.get(url)
+            res = session.get(url,timeout=5)
         except Exception:
             novel["abnormal"] = True
         res.encoding = "gbk"

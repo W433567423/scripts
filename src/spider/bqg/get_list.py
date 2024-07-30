@@ -52,7 +52,7 @@ def get_books_info_thread(i:int,novel_set:list)->list:
     novel_list=[]
     url = f"https://www.biqugen.net/quanben/{i}"
     try:
-        res = session.get(url)
+        res = session.get(url,timeout=5)
     except Exception:     
         print(f"第{i}页获取失败,https://www.biqugen.net/quanben/{i}")
         return novel_list
@@ -119,10 +119,16 @@ def get_books_other_info(novel_list:list)->list:
 # 获取某本小说其他信息(用于submit)
 def get_books_other_info_thread(novel:dict)->None:
     url = f"https://www.biqugen.net/book/{novel["book_id"]}/"
+    res=None
     try:
-        res = session.get(url)
+        res = session.get(url,timeout=5)
     except Exception:
-        res = session.get(url)
+        try:
+            res = session.get(url,timeout=5)
+        except Exception:
+            novel["abnormal"] = True
+            print(f"{url}获取失败")
+            return
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
