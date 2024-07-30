@@ -63,7 +63,8 @@ if __name__ == "__main__":
                     want = int(want)
                     if want < 1:
                         raw_list = get_no_chapter_books_list_from_db()
-                    raw_list = get_no_chapter_books_list_from_db()[:want]
+                    else:
+                        raw_list = get_no_chapter_books_list_from_db()[:want]
                     get_chapters_list(raw_list)
                     save_chapters_list_to_db(raw_list)
                 except:

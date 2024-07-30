@@ -55,6 +55,7 @@ def get_chapters_thread(novel: dict,progress: any) -> list:
     for i in range(0, len(chapters_list)):
         chapters_list[i]["chapter_order"] = i + 1
     novel["chapters_list"] = chapters_list
+    novel["abnormal"] = False
 
 
 # 获取小说章节列表
