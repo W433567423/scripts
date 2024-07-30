@@ -46,7 +46,7 @@ def get_no_extra_books_list_from_db() -> list:
     cursor = conn.cursor()  # 创建游标
     novel_list = []
 
-    cursor.execute("SELECT book_id FROM books WHERE is_extra=0")
+    cursor.execute("SELECT book_id FROM books WHERE is_extra=0 BY book_id ASC")
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {

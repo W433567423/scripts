@@ -56,7 +56,19 @@ if __name__ == "__main__":
                 novel_list = get_books_other_info(raw_list)
                 update_books_list(novel_list)
             case "4":
-                raw_list = get_no_chapter_books_list_from_db()[:1]
+                want = input("请输入要获取的小说数量：")
+                raw_list = []
+                match want:
+                    case "0":  # 获取所有
+                        raw_list = get_no_chapter_books_list_from_db()
+                    case _:
+                        # 如果输入的是数字
+                        try:
+                            want = int(want)
+                            raw_list = get_no_chapter_books_list_from_db()[:want]
+                        except:
+                            # 如果输入的是其他字符,则不处理
+                            break
                 get_chapters_list(raw_list)
                 save_chapters_list_to_db(raw_list)
             case "999":

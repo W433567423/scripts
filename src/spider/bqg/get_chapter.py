@@ -19,7 +19,6 @@ def get_chapters_count(novel: dict):
         .split("第")[1]
         .split("页")[0]
     )
-    print("🚀 ~ count:", count)
 
     return count
 
@@ -28,7 +27,7 @@ def get_chapters_count(novel: dict):
 def get_chapters_thread(novel: dict,progress: any) -> list:
     chapter_count = get_chapters_count(novel)
     chapters_list = []
-    task = progress.add_task(f"获取《{novel["book_name"]}》章节", total=chapter_count)
+    task = progress.add_task(f"获取《{novel["book_name"]}》", total=chapter_count)
     for i in range(0, chapter_count):
         url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i+1}.html"
         try:

@@ -12,7 +12,8 @@ class FrameProgress(Progress):
     def get_renderables(self):
         yield Panel(
             self.make_tasks_table(self.tasks),
-            expand=False,
+            expand=True,
+            border_style="green",
             style="black",
             title=f"正在多线程进行中(进程数量{maxThread})",
         )
