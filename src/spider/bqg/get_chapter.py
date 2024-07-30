@@ -29,12 +29,13 @@ def get_chapters_thread(novel: dict,progress: any) -> list:
     chapters_list = []
     task = progress.add_task(f"获取《{novel["book_name"]}》", total=chapter_count)
     for i in range(0, chapter_count):
+        if novel.get("abnormal"):
+            break
         url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i+1}.html"
         try:
             res = session.get(url)
         except Exception:
-            console.log("🚀 ~ 访问失败:", url)
-            return []
+            novel["abnormal"] = True
         res.encoding = "gbk"
         res.close()
         soup = BeautifulSoup(res.text, "html.parser")
