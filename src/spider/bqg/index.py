@@ -28,7 +28,7 @@ if __name__ == "__main__":
     * 3.   更新小说的详情(简介、连载状态、评分等)
     * 4.   获取小说的目录
 
-    * 999. 从数据库获取小说列表
+    * 999. 从数据库获取未获取章节的小说列表
 """,
         title="小说爬虫菜单",
         border_style="blue",
@@ -58,21 +58,19 @@ if __name__ == "__main__":
             case "4":
                 want = input("请输入要获取的小说数量：")
                 raw_list = []
-                match want:
-                    case "0":  # 获取所有
+                # 如果输入的是数字
+                try:
+                    want = int(want)
+                    if want < 1:
                         raw_list = get_no_chapter_books_list_from_db()
-                    case _:
-                        # 如果输入的是数字
-                        try:
-                            want = int(want)
-                            raw_list = get_no_chapter_books_list_from_db()[:want]
-                        except:
-                            # 如果输入的是其他字符,则不处理
-                            break
-                get_chapters_list(raw_list)
-                save_chapters_list_to_db(raw_list)
+                    raw_list = get_no_chapter_books_list_from_db()[:want]
+                    get_chapters_list(raw_list)
+                    save_chapters_list_to_db(raw_list)
+                except:
+                    console.print("异常输入")
+                    pass
             case "999":
-                raw_list = get_books_list_from_db()
+                raw_list = get_no_chapter_books_list_from_db()
                 console.log("🚀 ~ len(raw_list):", len(raw_list))
                 if len(raw_list) > 2:
                     console.log("🚀 ~ raw_list[0]:", raw_list[0])

@@ -58,7 +58,9 @@ def get_chapters_thread(novel: dict,progress: any) -> list:
 
 
 # 获取小说章节列表
-def get_chapters_list(list: list):
+def get_chapters_list(list: list) -> None:
+    if len(list) == 0:
+        return 
     with FrameProgress(
         "[progress.description]{task.description}",
         BarColumn(),
@@ -74,3 +76,6 @@ def get_chapters_list(list: list):
         for _ in as_completed(task_list):
             progress.update(task, advance=1)
         wait(task_list, return_when=ALL_COMPLETED)
+        task_list.clear()
+    # 提取出异常的小说列表返回
+    return get_chapters_list([novel for novel in list if novel.get("abnormal")])

@@ -306,10 +306,6 @@ def save_chapters_list_to_db(novel_list: list) -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
-    right_list = []
-    for novel in novel_list:
-        if not novel["abnormal"]:
-            right_list.append(novel)
     with FrameProgress(
         "[progress.description]{task.description}",
         BarColumn(),
@@ -318,8 +314,8 @@ def save_chapters_list_to_db(novel_list: list) -> None:
         "[cyan]⏳",
         TimeRemainingColumn(),
     ) as progress:
-        task = progress.add_task("存储章节列表", total=len(right_list))
-        for novel in right_list:
+        task = progress.add_task("存储章节列表", total=len(novel_list))
+        for novel in novel_list:
             cursor.executemany(
                 """
                     INSERT INTO chapters(
@@ -356,7 +352,7 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                 (novel["book_id"],),
             )
             progress.update(task, advance=1)
-        progress.update(task, completed=len(right_list))
+        progress.update(task, completed=len(novel_list))
         conn.commit()
         cursor.close()
         console.log("章节列表存储成功")
