@@ -67,7 +67,7 @@ if __name__ == "__main__":
                     get_chapters_list(raw_list)
                     save_chapters_list_to_db(raw_list)
                 except:
-                    console.print("异常输入")
+                    console.log("[red]异常输入")
                     pass
             case "999":
                 raw_list = get_no_chapter_books_list_from_db()
