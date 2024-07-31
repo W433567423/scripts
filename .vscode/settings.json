@@ -6,6 +6,7 @@
     "authorname",
     "authortagid",
     "bookid",
+    "bookinfo",
     "bookinteralid",
     "bookname",
     "booktag",

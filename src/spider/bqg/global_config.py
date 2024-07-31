@@ -26,7 +26,7 @@ requests.packages.urllib3.disable_warnings()  # 关闭警告
 # requests.adapters.DEFAULT_RETRIES = 3  # 重试次数
 session = requests.session()  # 创建会话
 # session.keep_alive = False  # 关闭多余连接
-requests.adapters.DEFAULT_POOLSIZE = maxThread  # 最大连接数
+requests.adapters.DEFAULT_POOLSIZE = 16  # 最大连接数
 chunk_size = 512  # 分片大小
 
 # 连接数据库

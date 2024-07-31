@@ -46,7 +46,9 @@ def get_no_extra_books_list_from_db() -> list:
     cursor = conn.cursor()  # 创建游标
     novel_list = []
 
-    cursor.execute("SELECT book_id FROM books WHERE is_extra=0 BY book_id ASC")
+    cursor.execute(
+        "SELECT book_id FROM books WHERE is_extra=False ORDER BY book_id ASC"
+    )
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {
@@ -97,15 +99,16 @@ def reset_books_to_db() -> None:
         CREATE TABLE IF NOT EXISTS books(
             book_id INT PRIMARY KEY COMMENT '笔趣阁小说id',
             book_name VARCHAR(255) COMMENT '小说名' not null,
+            book_cover VARCHAR(255) COMMENT '小说封面',
             book_author VARCHAR(255) COMMENT '小说作者',
-            book_publish_time VARCHAR(255) COMMENT '小说发布时间',
+            book_category VARCHAR(255) COMMENT '小说分类',
             write_status VARCHAR(255) COMMENT '小说连载状态',
-            file_path VARCHAR(255) COMMENT '小说文件路径',
-            popularity VARCHAR(255) COMMENT '小说人气',
+            publish_time VARCHAR(255) COMMENT '小说发布时间',
             intro TEXT COMMENT '小说简介',
-            abnormal BOOLEAN DEFAULT FALSE COMMENT '是否异常',
             is_extra BOOLEAN DEFAULT FALSE COMMENT '是否已添加额外信息(连载情况、人气、评分等)',
-            is_chapter BOOLEAN DEFAULT FALSE COMMENT '是否已添加章节信息'
+            is_chapter BOOLEAN DEFAULT FALSE COMMENT '是否已添加章节信息',
+            abnormal BOOLEAN DEFAULT FALSE COMMENT '是否异常',
+            file_path VARCHAR(255) COMMENT '小说文件路径'
         )
     """
     )
@@ -179,13 +182,9 @@ def save_books_list_to_db(novel_list: list) -> None:
             """
                 INSERT INTO books(
                     book_id,
-                    book_name,
-                    book_author,
-                    book_publish_time
+                    book_name
                 )
                 VALUES(
-                    %s,
-                    %s,
                     %s,
                     %s
                 )
@@ -194,8 +193,6 @@ def save_books_list_to_db(novel_list: list) -> None:
                 (
                     novel["book_id"],
                     novel["book_name"],
-                    novel["book_author"],
-                    novel["book_publish_time"],
                 )
                 for novel in novel_list
                 if novel["book_id"] not in overed_novel_list_id
@@ -231,46 +228,29 @@ def update_books_list(list: list) -> None:
         TimeRemainingColumn(),
     ) as progress:
         task1 = progress.add_task("更新小说信息", total=len(right_list))
-        # for novel in right_list:
-        #     try:
-        #         cursor.execute(
-        #             """
-        #                 UPDATE books
-        #                 SET
-        #                     write_status=%s,
-        #                     popularity=%s,
-        #                     intro=%s,
-        #                     is_extra=%s
-        #                 WHERE book_id=%s
-        #             """,
-        #             (
-        #                 novel["write_status"],
-        #                 novel["popularity"],
-        #                 novel["intro"],
-        #                 novel["is_extra"],
-        #                 novel["book_id"],
-        #             ),
-        #         )
-        #     except Exception as e:
-        #         print(f"[red]异常:{novel}")
-        #     progress.update(task1, advance=1)
+
         for i in range(0, len(right_list), chunk_size):
             cursor.executemany(
                 """
                     UPDATE books
                     SET
+                        book_cover=%s,
+                        book_author=%s,
+                        book_category=%s,
                         write_status=%s,
-                        popularity=%s,
+                        publish_time=%s,
                         intro=%s,
-                        is_extra=%s
+                        is_extra=True
                     WHERE book_id=%s
                 """,
                 [
                     (
+                        novel["book_cover"],
+                        novel["book_author"],
+                        novel["book_category"],
                         novel["write_status"],
-                        novel["popularity"],
+                        novel["publish_time"],
                         novel["intro"],
-                        novel["is_extra"],
                         novel["book_id"],
                     )
                     for novel in right_list[i : i + chunk_size]

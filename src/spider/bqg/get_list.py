@@ -3,15 +3,16 @@ from bs4 import BeautifulSoup
 from utils import normalize_novel_name,normalize_intro
 from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor, as_completed,wait, ALL_COMPLETED
+import time
 
 # 获取小说列表页数
 def get_books_list_page_num()->int:
-    url = "https://www.biqugen.net/quanben/"
+    url = "https://m.biqugen.net/full/1.html"
     res = session.get(url)
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
-    num_page = int(soup.find("div", class_="articlepage").find("a", class_="last").text)
+    num_page = int(soup.find("table", class_="page-book").find_all("td")[-1].find("a").attrs["href"].split("/")[-1].split(".")[0])
     return num_page
 
 # 获取小说列表
@@ -50,50 +51,39 @@ def get_books_list()->list:
 # 获取第i页小说列表(用于submit)
 def get_books_info_thread(i:int,novel_set:list)->list:
     novel_list=[]
-    url = f"https://www.biqugen.net/quanben/{i}"
+    url = f"https://m.biqugen.net/full/{i}.html"
     try:
         res = session.get(url,timeout=5)
     except Exception:     
-        print(f"第{i}页获取失败,https://www.biqugen.net/quanben/{i}")
+        print(f"第{i}页访问异常,{url}")
         return novel_list
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
-    tlist = soup.find("div", id="tlist")
-    if tlist==None:
-        print(f"第{i}页获取失败,https://www.biqugen.net/quanben/{i}")
+    ul = soup.find("ul", class_="s_m")
+    if ul==None:
+        print(f"第{i}页获取失败,{url}")
         return novel_list
-    items=tlist.find_all("li")
+    items=ul.find_all("li",class_='list-item')
     setFlag=False # 用于判断是否已经设置了total
     for item in items:
         novel = {
-            "book_name": "",
-            "book_link": "",
             "book_id": 0,
-            "book_author": "",
-            "book_publish_time": "",
+            "book_name": "",
             }
-        novel["book_name"] = normalize_novel_name(
-            item.find("div", class_="zp").find("a", class_="name").text
-        )
+        novel["book_name"] = normalize_novel_name(item.find("a").text)
         if not setFlag:
             setFlag=True
         if novel["book_name"] not in novel_set:
             novel_set.add(novel["book_name"])
-            novel["book_link"] = (
-                item.find("div", class_="zp").find("a", class_="name").attrs["href"]
-            )
             novel["book_id"] = int(
-                item.find("div", class_="zp")
-                .find("a", class_="name")
-                .attrs["href"]
+                item.find("a").attrs["href"]
                 .split("book/")[-1]
                 .split("/")[0]
             )
-            novel["book_author"] = item.find("div", class_="author").text
-            novel["book_publish_time"] = item.find("div", class_="sj").text
             novel_list.append(novel)
     setFlag=False
+    time.sleep(1)
     return novel_list
 
 # 逐本获取小说其他信息
@@ -114,11 +104,12 @@ def get_books_other_info(novel_list:list)->list:
             progress.update(task, advance=1)
         wait(task_list, return_when=ALL_COMPLETED)
     console.log("获取小说其他信息完成")
+
     return novel_list
 
 # 获取某本小说其他信息(用于submit)
 def get_books_other_info_thread(novel:dict)->None:
-    url = f"https://www.biqugen.net/book/{novel["book_id"]}/"
+    url = f"https://m.biqugen.net/book/{novel["book_id"]}/"
     res=None
     try:
         res = session.get(url,timeout=5)
@@ -127,28 +118,29 @@ def get_books_other_info_thread(novel:dict)->None:
             res = session.get(url,timeout=5)
         except Exception:
             novel["abnormal"] = True
-            print(f"{url}获取失败")
+            print(f"获取失败,{url}")
             return
     res.encoding = "gbk"
     res.close()
     soup = BeautifulSoup(res.text, "html.parser")
-    info = soup.find("div", id="info")
-    if(info==None):
+    info_div = soup.find("div", class_="bookinfo")
+    if(info_div==None):
         novel["abnormal"] = True
-        print(f"{url}获取info失败")
+        print(f"获取info失败,{url}")
         return
-    booktag=info.find("p",class_="booktag")
-    # 获取小说连载状态
-    popularity = booktag.findAll("span")[0].text.split("：")[1]
-    # 获取小说人气
-    write_status = booktag.findAll("span")[1].text
-    # 获取小说简介
-    intro = soup.find("div", id="intro").text
-    # 去除\xa0
-    novel["intro"] = normalize_intro(intro)
-    novel["write_status"] = '已完结' if write_status=="已完成" else "连载中"
-    novel["popularity"] = popularity
+    novel["book_cover"] = info_div.find("img").attrs["src"]
+    info_td = info_div.find("td", class_="info")
+    novel["book_author"] = info_td.find_all("p")[0].find("a").text
+    novel["book_category"] = info_td.find_all("p")[1].find("a").text
+    novel["write_status"] = '已完结' if info_td.find_all("p")[2].text.split("：")[1] else "连载中"
+    # 转换为时间戳
+    novel["publish_time"] = time.mktime(time.strptime(info_td.find_all("p")[3].text.split("：")[1], "%Y-%m-%d %H:%M:%S"))
+    novel["intro"] = normalize_intro(soup.find("div", class_="intro").text)
     novel["is_extra"] = True
 
 
 # ---------------------------------------------------
+if __name__ == "__main__":
+    list=get_books_info_thread(1,set())[:1]
+    get_books_other_info(list)
+    console.log(list)
