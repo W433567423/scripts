@@ -35,6 +35,7 @@ def get_chapters_thread(novel: dict,progress: any) -> list:
         try:
             res = session.get(url,timeout=5)
         except Exception:
+            progress.update(task, visible=False)
             novel["abnormal"] = True
         res.encoding = "gbk"
         res.close()
