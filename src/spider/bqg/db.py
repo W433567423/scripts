@@ -258,9 +258,7 @@ def update_books_list(list: list) -> None:
             )
             progress.update(task1, advance=chunk_size)
         progress.update(task1, completed=len(right_list))
-        console.log(f"[red]上报异常,数量:{len(wrong_list)}")
         if len(wrong_list) != 0:
-            console.log("🚀 ~ wrong_list:", wrong_list)
             task2 = progress.add_task("更新异常小说", total=len(wrong_list))
             for i in range(0, len(wrong_list), chunk_size):
                 cursor.executemany(
@@ -296,8 +294,9 @@ def save_chapters_list_to_db(novel_list: list) -> None:
     ) as progress:
         task = progress.add_task("存储章节列表", total=len(novel_list))
         for novel in novel_list:
-            cursor.executemany(
-                """
+            try:
+                cursor.executemany(
+                    """
                     INSERT INTO chapters(
                         chapter_id,
                         chapter_name,
@@ -311,26 +310,31 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                         %s
                     )
                 """,
-                [
-                    (
-                        chapter["chapter_id"],
-                        chapter["chapter_name"],
-                        chapter["chapter_order"],
-                        novel["book_id"],
-                    )
-                    for chapter in novel["chapters_list"]
-                ],
-            )
-            # 更新books表is_chapter字段
-            cursor.execute(
-                """
-                    UPDATE books
-                    SET
-                        is_chapter=True
-                    WHERE book_id=%s
-                """,
-                (novel["book_id"],),
-            )
+                    [
+                        (
+                            chapter["chapter_id"],
+                            chapter["chapter_name"],
+                            chapter["chapter_order"],
+                            novel["book_id"],
+                        )
+                        for chapter in novel["chapters_list"]
+                    ],
+                )
+                # 更新books表is_chapter字段
+                cursor.execute(
+                    """
+                        UPDATE books
+                        SET
+                            is_chapter=True
+                        WHERE book_id=%s
+                    """,
+                    (novel["book_id"],),
+                )
+            except Exception as e:
+                # 写入log文件
+                with open("log.txt", "a", encoding="utf-8") as f:
+                    f.write(f"{novel['book_name']}章节列表存储失败\n")
+                    f.write(f"错误信息：{e}\n\n")
             progress.update(task, advance=1)
         progress.update(task, completed=len(novel_list))
         conn.commit()

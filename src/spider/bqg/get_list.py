@@ -139,8 +139,3 @@ def get_books_other_info_thread(novel:dict)->None:
     novel["is_extra"] = True
 
 
-# ---------------------------------------------------
-if __name__ == "__main__":
-    list=get_books_info_thread(1,set())[:1]
-    get_books_other_info(list)
-    console.log(list)

@@ -5,8 +5,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPL
 
 
 # 获取小说章节数量
-def get_chapters_count(novel: dict):
-    url = f"https://www.biqugen.net/book/{novel['book_id']}/"
+def get_chapters_count(novel: dict)->int:
+    url = f"https://m.biqugen.net/book/{novel["book_id"]}/"
     res = session.get(url,timeout=5)
     res.encoding = "gbk"
     res.close()
@@ -31,15 +31,15 @@ def get_chapters_thread(novel: dict,progress: any) -> list:
     for i in range(0, chapter_count):
         if novel.get("abnormal"):
             break
-        url = f"https://www.biqugen.net/book/{novel['book_id']}/index_{i+1}.html"
+        url = f"https://m.biqugen.net/book/{novel["book_id"]}/index_{i+1}.html"
         try:
             res = session.get(url,timeout=5)
         except Exception:
             novel["abnormal"] = True
         res.encoding = "gbk"
         res.close()
-        soup = BeautifulSoup(res.text, "html.parser")
-        items = soup.find("dl", class_="zjlist").find_all("dd")
+        lb_mulu = BeautifulSoup(res.text, "html.parser").find_all("div",class_="lb_mulu")[-1]
+        items = lb_mulu.find("ul",class_="last9").find_all("li")
 
         for item in items:
             chapter = {}
@@ -83,3 +83,4 @@ def get_chapters_list(list: list) -> None:
         console.log(f"[red]有异常列表，正在递归重复获取{len(wrong_list)}")
     
     return get_chapters_list(wrong_list)
+
