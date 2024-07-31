@@ -1,5 +1,6 @@
 from global_config import conn, console, chunk_size, FrameProgress
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
+import time
 
 
 # 从数据库获取小说列表
@@ -332,9 +333,21 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                 )
             except Exception as e:
                 # 写入log文件
-                with open("log.txt", "a", encoding="utf-8") as f:
-                    f.write(f"{novel['book_name']}章节列表存储失败\n")
-                    f.write(f"错误信息：{e}\n\n")
+                with open(
+                    f"log-{time.strftime('%Y-%m-%d',time.localtime(time.time()))}.txt",
+                    "a",
+                    encoding="utf-8",
+                ) as f:
+                    # 写入时间、id、书名、错误信息
+                    f.write(
+                        f"{time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))} {novel['book_id']} {novel['book_name']} {e}\n"
+                    )
+                    # 如果有章节信息,写入前三节章节信息
+                    if novel.get("chapters_list") and len(novel["chapters_list"]) != 0:
+                        f.write(
+                            f"{novel['chapters_list'][0]}\n{novel['chapters_list'][1]}\n{novel['chapters_list'][2]}\n\n"
+                        )
+
             progress.update(task, advance=1)
         progress.update(task, completed=len(novel_list))
         conn.commit()
