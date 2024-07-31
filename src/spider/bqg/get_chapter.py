@@ -79,6 +79,7 @@ def get_chapters_list(list: list) -> None:
         wait(task_list, return_when=ALL_COMPLETED)
     # 提取出异常的小说列表返回
     wrong_list = [novel for novel in list if novel.get("abnormal")]
-    console.log(f"[red]有异常列表，正在递归重复获取{len(wrong_list)}")
+    if len(wrong_list) > 0:
+        console.log(f"[red]有异常列表，正在递归重复获取{len(wrong_list)}")
     
     return get_chapters_list(wrong_list)

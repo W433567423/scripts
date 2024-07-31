@@ -21,7 +21,7 @@ class FrameProgress(Progress):
 
 
 # 全局变量
-maxThread = 32  # 最大线程数
+maxThread = 20  # 最大线程数
 requests.packages.urllib3.disable_warnings()  # 关闭警告
 # requests.adapters.DEFAULT_RETRIES = 3  # 重试次数
 session = requests.session()  # 创建会话
