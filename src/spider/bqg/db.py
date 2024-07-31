@@ -1,4 +1,4 @@
-from global_config import conn, console, chunk_size, FrameProgress
+from global_config import conn, set_path, console, chunk_size, FrameProgress
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
 import time
 
@@ -334,7 +334,9 @@ def save_chapters_list_to_db(novel_list: list) -> None:
             except Exception as e:
                 # 写入log文件
                 with open(
-                    f"log-{time.strftime('%Y-%m-%d',time.localtime(time.time()))}.txt",
+                    set_path(
+                        f"log-{time.strftime('%Y-%m-%d',time.localtime(time.time()))}.txt"
+                    ),
                     "a",
                     encoding="utf-8",
                 ) as f:

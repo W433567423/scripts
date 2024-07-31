@@ -1,4 +1,5 @@
 import requests
+import os
 import pymysql
 import requests.adapters
 from rich.panel import Panel
@@ -38,3 +39,8 @@ conn = pymysql.connect(
     database="novel",
     charset="utf8",
 )
+
+
+# 设置文件地址
+def set_path(path: str):
+    return os.path.join(os.path.dirname(__file__), path)
