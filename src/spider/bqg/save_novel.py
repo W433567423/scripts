@@ -25,6 +25,10 @@ def save_novel_list(novel_list: list):
             task_list.append(executor.submit(get_chapter_content_thread, novel, chapters_list,progress,task))
         wait(task_list, return_when="ALL_COMPLETED")
         update_db(None)
+        if(len(novel_list)<99):
+            console.log(f"本次下载成功{len(novel_list)}本小说")
+            for novel in novel_list:
+                console.log(novel["book_name"])
 
 # 获取某章节内容(用于submit)
 def get_chapter_content_thread(novel, chapter_list,progress,parent_task):
@@ -93,7 +97,7 @@ def update_db(task:dict|None):
         console.log("[green]下载并更新到数据库完成")
         return
     db_tasks.append(task)
-    if(len(db_tasks)%10==0):
+    if(len(db_tasks)%6==0):
         update_book_download(db_tasks)
         db_tasks.clear()
 
