@@ -16,7 +16,7 @@ class FrameProgress(Progress):
             expand=True,
             border_style="green",
             style="black",
-            title=f"正在多线程进行中(进程数量{maxThread})",
+            title=f"正在多线程进行中",
             safe_box=True,
         )
 

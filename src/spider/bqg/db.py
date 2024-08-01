@@ -177,7 +177,7 @@ def reset_books_to_db() -> None:
     """
     )
     conn.commit()
-    console.log("数据库表books重置成功")
+    console.log("[green]数据库表books重置成功")
     cursor.close()
 
 
@@ -203,7 +203,7 @@ def reset_chapters_to_db() -> None:
     # 更新books表is_chapter字段
     cursor.execute("UPDATE books SET is_chapter=False")
     conn.commit()
-    console.log("数据库表chapters重置成功")
+    console.log("[green]数据库表chapters重置成功")
     cursor.close()
 
 
@@ -219,7 +219,7 @@ def reset_download_to_db() -> None:
     cursor = conn.cursor()
     cursor.execute("UPDATE books SET file_path=Null")
     conn.commit()
-    console.log("数据库表chapters重置成功")
+    console.log("[green]下载的文件已全部删除,下载重置成功")
     cursor.close()
 
 
