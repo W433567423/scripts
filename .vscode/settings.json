@@ -56,5 +56,20 @@
     "vuft",
     "wordscount",
     "zjlist"
+  ],
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "previewLimit": 50,
+      "server": "bj-cynosdbmysql-grp-jrtc8xqu.sql.tencentcdb.com",
+      "port": 23423,
+      "driver": "MySQL",
+      "name": "腾讯云",
+      "database": "novel",
+      "username": "tutu"
+    }
   ]
 }

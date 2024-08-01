@@ -1,6 +1,6 @@
 from global_config import conn, set_path, console, chunk_size, FrameProgress
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
-import time
+import time, os
 
 
 # 从数据库获取小说列表
@@ -9,22 +9,22 @@ def get_books_list_from_db() -> list:
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
     novel_list = []
-    novel = {
-        "book_name": "",
-        "book_link": "",
-        "book_author": "",
-        "book_publish_time": "",
-        "write_status": "",
-        "popularity": "",
-        "intro": "",
-        "abnormal": False,
-        "is_extra": False,
-    }
     cursor.execute(
         "SELECT book_id,book_name,book_link,book_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM books"
     )
     db_list = cursor.fetchall()
     for item in db_list:
+        novel = {
+            "book_name": "",
+            "book_link": "",
+            "book_author": "",
+            "book_publish_time": "",
+            "write_status": "",
+            "popularity": "",
+            "intro": "",
+            "abnormal": False,
+            "is_extra": False,
+        }
         novel["book_id"] = item[0]
         novel["book_name"] = item[1]
         novel["book_link"] = item[2]
@@ -84,6 +84,58 @@ def get_no_chapter_books_list_from_db() -> list:
         novel_list.append(novel)
     cursor.close()
     return novel_list
+
+
+# 获取待下载的小说列表
+def get_download_books_list_from_db() -> list:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    novel_list = []
+    # where file_path is null and is_chapter is true
+    cursor.execute(
+        "SELECT book_id,book_name,intro,book_author FROM books WHERE file_path IS NULL AND is_chapter=True"
+    )
+    db_list = cursor.fetchall()
+    for item in db_list:
+        novel = {
+            "book_id": "",
+            "book_name": "",
+            "file_path": "",
+        }
+        novel["book_id"] = item[0]
+        novel["book_name"] = item[1]
+        novel["intro"] = item[2]
+        novel["book_author"] = item[3]
+        novel["file_path"] = None
+        novel_list.append(novel)
+    cursor.close()
+    return novel_list
+
+
+# 获取小说章节列表
+def get_chapters_list_from_db(book_id: int) -> list:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    chapters_list = []
+    cursor.execute(
+        "SELECT chapter_id,chapter_name,chapter_order FROM chapters WHERE book_id=%s ORDER BY chapter_order ASC",
+        (book_id,),
+    )
+    db_list = cursor.fetchall()
+    for item in db_list:
+        chapter = {
+            "chapter_id": "",
+            "chapter_name": "",
+            "chapter_order": "",
+        }
+        chapter["chapter_id"] = item[0]
+        chapter["chapter_name"] = item[1]
+        chapter["chapter_order"] = item[2]
+        chapters_list.append(chapter)
+    cursor.close()
+    return chapters_list
 
 
 # 重置数据库表books
@@ -155,9 +207,27 @@ def reset_chapters_to_db() -> None:
     cursor.close()
 
 
+# 重置下载
+def reset_download_to_db() -> None:
+    global conn
+    conn.ping(reconnect=True)
+    # 删除path目录下所有文件
+    path = set_path("novel")
+    if os.path.exists(path):
+        for file in os.listdir(path):
+            os.remove(os.path.join(path, file))
+    cursor = conn.cursor()
+    cursor.execute("UPDATE books SET file_path=Null")
+    conn.commit()
+    console.log("数据库表chapters重置成功")
+    cursor.close()
+
+
 # ---------------------小说---------------------
 # 存储小说列表至数据库
 def save_books_list_to_db(novel_list: list) -> None:
+    if len(novel_list) == 0:
+        return
     console.log("🚀 ~ 正在存储进数据库")
     global conn
     conn.ping(reconnect=True)
@@ -207,6 +277,9 @@ def save_books_list_to_db(novel_list: list) -> None:
 
 # 更新小说列表到数据库
 def update_books_list(list: list) -> None:
+    if len(list) == 0:
+        console.log("[red]列表为空")
+        return
     console.log("🚀 ~ 正在更新数据库")
     global conn
     conn.ping(reconnect=True)
@@ -281,6 +354,9 @@ def update_books_list(list: list) -> None:
 # ---------------------章节---------------------
 # 存储章节列表至数据库
 def save_chapters_list_to_db(novel_list: list) -> None:
+    if len(novel_list) == 0:
+        console.log("[red]列表为空")
+        return
     console.log("🚀 ~ 正在存储进数据库")
     global conn
     conn.ping(reconnect=True)
@@ -355,3 +431,20 @@ def save_chapters_list_to_db(novel_list: list) -> None:
         conn.commit()
         cursor.close()
         console.log("章节列表存储成功")
+
+
+def update_book_download(book_id: int, file_path: str) -> None:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    cursor.execute(
+        """
+            UPDATE books
+            SET
+                file_path=%s
+            WHERE book_id=%s
+        """,
+        (file_path, book_id),
+    )
+    conn.commit()
+    cursor.close()
