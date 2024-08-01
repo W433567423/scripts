@@ -1,4 +1,4 @@
-from spider.bqg.utils import conn, set_path, console, chunk_size, FrameProgress
+from utils import conn, set_path, console, chunk_size, FrameProgress
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
 import time, os
 
@@ -136,6 +136,20 @@ def get_chapters_list_from_db(book_id: int) -> list:
         chapters_list.append(chapter)
     cursor.close()
     return chapters_list
+
+
+# 获取已下载完成的小说列表
+def get_download_overed_books_list_from_db() -> list:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    novel_list = []
+    cursor.execute("SELECT book_name FROM books WHERE file_path IS NOT NULL")
+    db_list = cursor.fetchall()
+    for item in db_list:
+        novel_list.append(item[0])
+    cursor.close()
+    return novel_list
 
 
 # 重置数据库表books
@@ -455,20 +469,39 @@ def update_book_download(novel_list: list) -> None:
 
 
 # 更新下载并更新到数据库
-def update_download(novel_list: list) -> None:
+def update_download_wrong(novel_list: list) -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
-    cursor.executemany(
-        """
-            UPDATE books
-            SET
-                file_path=%s
-            WHERE book_name=%s
-            AND file_path IS NULL
-        """,
-        [(item["file_path"], item["book_name"]) for item in novel_list],
-    )
+    remote_list = get_download_overed_books_list_from_db()
+    console.log(f"[green]获取数据库已下载成功数量:{len(remote_list)}")
+
+    if len(novel_list) == len(remote_list):
+        console.log("[green]无需上传")
+        return
+
+    # 剔除已下载的小说
+    ready_arr = []
+    for novel in novel_list:
+        if novel["book_name"] not in remote_list:
+            ready_arr.append(novel)
+
+    with FrameProgress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("将本地小说更新到数据库", total=len(ready_arr))
+        for novel in ready_arr:
+            cursor.execute(
+                "UPDATE books SET file_path=%s WHERE book_id=%s",
+                (novel["file_path"], novel["book_id"]),
+            )
+            progress.update(task, advance=1)
+
     conn.commit()
     cursor.close()
-    console.log("[green]下载并更新到数据库完成")
+    console.log("[green]本地小说更新到数据库完成")

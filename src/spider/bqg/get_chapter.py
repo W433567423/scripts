@@ -1,4 +1,4 @@
-from spider.bqg.utils import FrameProgress, maxThread, session, console
+from utils import FrameProgress, maxThread, session, console
 from bs4 import BeautifulSoup
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED

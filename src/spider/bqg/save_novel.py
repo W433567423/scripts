@@ -1,5 +1,5 @@
-from db import  get_chapters_list_from_db,update_book_download,console
-from spider.bqg.utils import session,set_path, FrameProgress
+from db import  get_chapters_list_from_db,update_book_download,update_download_wrong
+from utils import session,set_path,console, FrameProgress
 from rich.progress import BarColumn, MofNCompleteColumn, TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor,wait
 from bs4 import BeautifulSoup
@@ -107,5 +107,5 @@ def scan_local_novels():
             novel["book_name"] = file.replace(".txt", "")
             novel["file_path"] = os.path.join(root, file)
             novel_list.append(novel)
-
-    update_download(novel_list)
+    
+    update_download_wrong(novel_list)

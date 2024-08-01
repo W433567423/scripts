@@ -1,5 +1,5 @@
 from rich.panel import Panel
-from spider.bqg.utils import console
+from utils import console
 from db import (
     conn,
     get_no_extra_books_list_from_db,
