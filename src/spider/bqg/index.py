@@ -77,10 +77,8 @@ if __name__ == "__main__":
                     save_chapters_list_to_db(raw_list)
                 except:
                     console.log("[red]异常输入")
-                    pass
             case "5":
                 scan_local_novels()
-                pass
             case "6":
                 init_dir()
                 want = input("请输入要获取的小说数量：")
@@ -93,6 +91,7 @@ if __name__ == "__main__":
                     else:
                         raw_list = get_download_books_list_from_db()[:want]
                     save_novel_list(raw_list)
+                    scan_local_novels()
                 except:
                     console.log("[red]异常输入")
 
@@ -107,4 +106,4 @@ if __name__ == "__main__":
                 get_books_other_info_thread(novel)
                 console.log("🚀 ~ novel:", novel)
             case _:
-                pass
+                console.log("[red]异常输入")
