@@ -1,4 +1,4 @@
-from global_config import conn, set_path, console, chunk_size, FrameProgress
+from spider.bqg.utils import conn, set_path, console, chunk_size, FrameProgress
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
 import time, os
 
@@ -433,18 +433,42 @@ def save_chapters_list_to_db(novel_list: list) -> None:
         console.log("章节列表存储成功")
 
 
-def update_book_download(book_id: int, file_path: str) -> None:
+# 更新小说下载地址
+def update_book_download(novel_list: list) -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
-    cursor.execute(
+    cursor.executemany(
         """
             UPDATE books
             SET
                 file_path=%s
             WHERE book_id=%s
         """,
-        (file_path, book_id),
+        [(item["book_id"], item["file_path"]) for item in novel_list],
+    )
+    # 当前时间
+    now_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+    print(f"{now_time} 更新了{len(novel_list)}条数据")
+    conn.commit()
+    cursor.close()
+
+
+# 更新下载并更新到数据库
+def update_download(novel_list: list) -> None:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    cursor.executemany(
+        """
+            UPDATE books
+            SET
+                file_path=%s
+            WHERE book_name=%s
+            AND file_path IS NULL
+        """,
+        [(item["file_path"], item["book_name"]) for item in novel_list],
     )
     conn.commit()
     cursor.close()
+    console.log("[green]下载并更新到数据库完成")

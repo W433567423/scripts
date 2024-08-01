@@ -1,4 +1,4 @@
-from global_config import FrameProgress,maxThread,session,console
+from spider.bqg.utils import FrameProgress,maxThread,session,console
 from bs4 import BeautifulSoup
 from utils import normalize_novel_name,normalize_intro
 from rich.progress import MofNCompleteColumn,BarColumn,TimeRemainingColumn

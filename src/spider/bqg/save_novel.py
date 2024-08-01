@@ -1,10 +1,11 @@
-from db import get_download_books_list_from_db, get_chapters_list_from_db,update_book_download
-from global_config import console,maxThread,session,set_path, FrameProgress
+from db import  get_chapters_list_from_db,update_book_download,console
+from spider.bqg.utils import session,set_path, FrameProgress
 from rich.progress import BarColumn, MofNCompleteColumn, TimeRemainingColumn
-from concurrent.futures import ThreadPoolExecutor, as_completed, wait, ALL_COMPLETED
+from concurrent.futures import ThreadPoolExecutor,wait
 from bs4 import BeautifulSoup
 import os
 
+db_tasks = []
 
 # 保存小说内容
 def save_novel_list(novel_list: list):
@@ -15,13 +16,15 @@ def save_novel_list(novel_list: list):
         MofNCompleteColumn(),
         "[cyan]⏳",
         TimeRemainingColumn(),
-    ) as progress, ThreadPoolExecutor(max_workers=8) as executor:
+    ) as progress, ThreadPoolExecutor(max_workers=6) as executor:
         
         task = progress.add_task("正在保存小说至本地", total=len(novel_list))
         task_list = []
         for novel in novel_list:
             chapters_list = get_chapters_list_from_db(novel["book_id"])
             task_list.append(executor.submit(get_chapter_content_thread, novel, chapters_list,progress,task))
+        wait(task_list, return_when="ALL_COMPLETED")
+        update_db(None)
 
 # 获取某章节内容(用于submit)
 def get_chapter_content_thread(novel, chapter_list,progress,parent_task):
@@ -38,7 +41,7 @@ def get_chapter_content_thread(novel, chapter_list,progress,parent_task):
     path=set_path(f"novel/{novel["book_name"]}.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write(book_content)
-    update_book_download(novel["book_id"],path)
+    update_db({"book_id":novel["book_id"],"file_path": path})
     progress.update(task, visible=False)
     progress.update(parent_task, advance=1)
 
@@ -78,7 +81,31 @@ def get_chapter_content(novel, chapter):
             chapter_content=chapter_content+ str(content).replace("\xa0"," ").replace("\n\n"," ")+'\n'
     return  chapter_content
 
+# 初始化文件夹
 def init_dir():
     if not os.path.exists("novel"):
         os.makedirs("novel")
   
+#   更新数据库
+def update_db(task:dict|None):
+    if(task==None):
+        update_book_download(db_tasks)
+        console.log("[green]下载并更新到数据库完成")
+        return
+    db_tasks.append(task)
+    if(len(db_tasks)%10==0):
+        update_book_download(db_tasks)
+        db_tasks.clear()
+
+# 扫描本地小说上传至数据库
+def scan_local_novels():
+    path = set_path("novel")
+    novel_list = []
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            novel = {}
+            novel["book_name"] = file.replace(".txt", "")
+            novel["file_path"] = os.path.join(root, file)
+            novel_list.append(novel)
+
+    update_download(novel_list)

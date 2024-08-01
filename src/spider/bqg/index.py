@@ -1,5 +1,5 @@
 from rich.panel import Panel
-from global_config import console
+from spider.bqg.utils import console
 from db import (
     conn,
     get_no_extra_books_list_from_db,
@@ -16,7 +16,7 @@ from get_list import get_books_list, get_books_other_info, get_books_other_info_
 from get_chapter import (
     get_chapters_list,
 )
-from save_novel import save_novel_list, init_dir
+from save_novel import save_novel_list, init_dir, scan_local_novels
 
 # 入口
 if __name__ == "__main__":
@@ -30,7 +30,9 @@ if __name__ == "__main__":
     * 2.   从网站更新小说列表
     * 3.   更新小说的详情(简介、连载状态、评分等)
     * 4.   获取小说的目录
-    * 5.   保存小说至本地
+    * 5.   扫描已下载小说至数据库
+    * 6.   保存小说至本地
+
 
     * 999. 从数据库获取未获取章节的小说列表
 """,
@@ -77,6 +79,9 @@ if __name__ == "__main__":
                     console.log("[red]异常输入")
                     pass
             case "5":
+                scan_local_novels()
+                pass
+            case "6":
                 init_dir()
                 want = input("请输入要获取的小说数量：")
                 raw_list = []
