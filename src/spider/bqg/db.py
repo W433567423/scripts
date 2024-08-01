@@ -1,4 +1,4 @@
-from utils import conn, set_path, console, chunk_size, FrameProgress
+from utils import conn, set_path, console, chunk_size, get_now_time,FrameProgress
 from rich.progress import MofNCompleteColumn, BarColumn, TimeRemainingColumn
 import time, os
 
@@ -425,14 +425,14 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                 # 写入log文件
                 with open(
                     set_path(
-                        f"log-{time.strftime('%Y-%m-%d',time.localtime(time.time()))}.txt"
+                        f"log-{get_now_time()}.txt"
                     ),
                     "a",
                     encoding="utf-8",
                 ) as f:
                     # 写入时间、id、书名、错误信息
                     f.write(
-                        f"{time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time()))} {novel['book_id']} {novel['book_name']} {e}\n"
+                        f"{get_now_time()} {novel['book_id']} {novel['book_name']} {e}\n"
                     )
                     # 如果有章节信息,写入前三节章节信息
                     if novel.get("chapters_list") and len(novel["chapters_list"]) != 0:
@@ -452,17 +452,27 @@ def update_book_download(novel_list: list) -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
-    cursor.executemany(
-        """
-            UPDATE books
-            SET
-                file_path=%s
-            WHERE book_id=%s
-        """,
-        [(item["book_id"], item["file_path"]) for item in novel_list],
-    )
+    for novel in novel_list:
+        try:
+            cursor.execute(
+                "UPDATE books SET file_path=%s WHERE book_id=%s",
+                (novel["file_path"], novel["book_id"]),
+            )
+        except Exception:
+            # 写入日志
+            with open(
+                set_path(
+                    f"log-{get_now_time()}.txt"
+                ),
+                "a",
+                encoding="utf-8",
+            ) as f:
+                f.write(f"{get_now_time()} {novel['book_id']} UPDATE books SET file_path=%s WHERE book_id=%s,{
+                (novel["file_path"], novel["book_id"])}\n"
+                )
+          
     # 当前时间
-    now_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+    now_time = get_now_time()
     print(f"{now_time} 更新了{len(novel_list)}条数据")
     conn.commit()
     cursor.close()

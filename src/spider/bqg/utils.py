@@ -1,4 +1,4 @@
-import requests, pymysql, re, os
+import requests, pymysql, re, os, time
 import requests.adapters
 from rich.panel import Panel
 from rich.progress import Progress
@@ -89,3 +89,8 @@ def normalize_intro(str: str) -> str:
         .strip()
     )
     return intro
+
+
+# 获取当前时间
+def get_now_time():
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
