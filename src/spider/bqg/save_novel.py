@@ -87,8 +87,9 @@ def get_chapter_content(novel, chapter):
 
 # 初始化文件夹
 def init_dir():
-    if not os.path.exists("novel"):
-        os.makedirs("novel")
+    path=set_path("novel")
+    if not os.path.exists(path):
+        os.makedirs(path)
   
 #   更新数据库
 def update_db(task:dict|None):

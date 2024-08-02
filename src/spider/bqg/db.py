@@ -507,8 +507,8 @@ def update_download_wrong(novel_list: list) -> None:
         task = progress.add_task("将本地小说更新到数据库", total=len(ready_arr))
         for novel in ready_arr:
             cursor.execute(
-                "UPDATE books SET file_path=%s WHERE book_id=%s",
-                (novel["file_path"], novel["book_id"]),
+                "UPDATE books SET file_path=%s WHERE book_name=%s",
+                (novel["file_path"], novel["book_name"]),
             )
             progress.update(task, advance=1)
 
