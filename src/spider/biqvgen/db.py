@@ -181,6 +181,15 @@ def get_empty_content_chapters_list_from_db(limit=None) -> list:
     cursor.close()
     return chapters_list
 
+def get_empty_content_count_from_db()->list:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    cursor.execute("SELECT COUNT(*) FROM chapters WHERE content IS NULL")
+    count = cursor.fetchall()[0][0]
+    cursor.close()
+    return count
+
 # 重置数据库表books
 def reset_books_to_db() -> None:
     global conn

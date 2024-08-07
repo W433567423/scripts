@@ -13,6 +13,7 @@ from db import (
     save_chapters_content_to_db,
     update_books_list,
     get_download_books_list_from_db,
+    get_empty_content_count_from_db,
 )
 from get_list import get_books_list, get_books_other_info, get_books_other_info_thread
 from get_chapter import (
@@ -92,6 +93,8 @@ if __name__ == "__main__":
                 raw_list = []
                 # 如果输入的是数字
                 try:
+                    count = get_empty_content_count_from_db()
+                    console.log("🚀 ~ 未获取内容的章节数量:", count)
                     want = int(want)
                     if want < 1:
                         # 每一千条数据获取一次
