@@ -114,3 +114,53 @@ def scan_local_novels():
             novel_list.append(novel)
     
     update_download_wrong(novel_list)
+
+
+# 根据章节id获取content
+def get_content_by_chapter_list(chapter_list):
+    with FrameProgress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn(),
+    ) as progress, ThreadPoolExecutor(max_workers=6) as executor:
+        task = progress.add_task("正在获取章节内容", total=len(chapter_list))
+        task_list = []
+        for chapter in chapter_list:
+            task_list.append(executor.submit(get_content_by_chapter_id, chapter,progress,task))
+        wait(task_list, return_when="ALL_COMPLETED")
+    
+
+def get_content_by_chapter_id(chapter,progress,task_id):
+    chapter_id=chapter["chapter_id"]
+    novel_id=chapter["novel_id"]
+    url = f"https://m.biqugen.net/book/{novel_id}/{chapter_id}.html"
+    res=None
+    try:
+        res = session.get(url,timeout=5)
+    except Exception:
+        chapter["abnormal"] = True
+        print(f"获取失败,{url}")
+        return
+    soup = BeautifulSoup(res.text, "html.parser")
+    contents = soup.find("div", id="nr1").contents
+    if contents == None:
+        chapter["abnormal"] = True
+        print(f"获取失败,{url}")
+        return
+    chapter_content=""
+    for content in contents:
+        if content.name == "center":
+            pass
+        elif content.name == "br":
+            pass
+        elif '第' in str(content) and '章' in str(content):
+            pass
+        elif "-->>" in str(content):
+            pass
+        else:
+            chapter_content=chapter_content+ str(content).replace("\xa0"," ").replace("\n\n"," ")+'\n'
+    chapter["content"]=chapter_content
+    progress.update(task_id, advance=1)

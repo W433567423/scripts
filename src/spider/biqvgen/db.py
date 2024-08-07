@@ -152,6 +152,35 @@ def get_download_overed_books_list_from_db() -> list:
     return novel_list
 
 
+# 获取content为空的章节列表
+def get_empty_content_chapters_list_from_db(limit=None) -> list:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    chapters_list = []
+    sql = "SELECT chapter_id,chapter_name,novel_id FROM chapters WHERE content IS NULL ORDER BY chapter_id ASC"
+    if(limit):
+        sql += f" LIMIT {limit}"
+    cursor.execute(sql
+    )
+
+
+    db_list = cursor.fetchall()
+    for item in db_list:
+        chapter = {
+            "chapter_id": "",
+            "chapter_name": "",
+            "novel_id": "",
+            "content": "",
+            "abnormal": False,
+        }
+        chapter["chapter_id"] = item[0]
+        chapter["chapter_name"] = item[1]
+        chapter["novel_id"] = item[2]
+        chapters_list.append(chapter)
+    cursor.close()
+    return chapters_list
+
 # 重置数据库表books
 def reset_books_to_db() -> None:
     global conn
@@ -507,3 +536,41 @@ def update_download_wrong(novel_list: list) -> None:
     conn.commit()
     cursor.close()
     console.log("[green]本地小说更新到数据库完成")
+
+
+# 更新数据库
+def save_chapters_content_to_db(chapter_list)->None:
+    global conn
+    conn.ping(reconnect=True)
+    cursor = conn.cursor()  # 创建游标
+    with FrameProgress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        "[progress.percentage]{task.percentage:>3.1f}%",
+        MofNCompleteColumn(),
+        "[cyan]⏳",
+        TimeRemainingColumn(),
+    ) as progress:
+        task = progress.add_task("存储章节内容", total=len(chapter_list))
+        for chapter in chapter_list:
+            try:
+                cursor.execute(
+                    "UPDATE chapters SET content=%s WHERE chapter_id=%s",
+                    (chapter["content"], chapter["chapter_id"]),
+                )
+            except Exception as e:
+                # 写入log文件
+                with open(
+                    set_path(
+                        f"log-{get_now_time()}.txt"
+                    ),
+                    "a",
+                    encoding="utf-8",
+                ) as f:
+                    # 写入时间、id、书名、错误信息
+                    f.write(
+                        f"{get_now_time()} {chapter['chapter_id']} {chapter['chapter_name']} {e}\n"
+                    )
+            progress.update(task, advance=1)
+        conn.commit()
+        cursor.close()

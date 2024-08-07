@@ -4,11 +4,13 @@ from db import (
     conn,
     get_no_extra_books_list_from_db,
     get_no_chapter_books_list_from_db,
+    get_empty_content_chapters_list_from_db,
     reset_books_to_db,
     reset_chapters_to_db,
     reset_download_to_db,
     save_books_list_to_db,
     save_chapters_list_to_db,
+    save_chapters_content_to_db,
     update_books_list,
     get_download_books_list_from_db,
 )
@@ -16,7 +18,12 @@ from get_list import get_books_list, get_books_other_info, get_books_other_info_
 from get_chapter import (
     get_chapters_list,
 )
-from save_novel import save_novel_list, init_dir, scan_local_novels
+from save_novel import (
+    save_novel_list,
+    init_dir,
+    scan_local_novels,
+    get_content_by_chapter_list,
+)
 
 # 入口
 if __name__ == "__main__":
@@ -30,8 +37,11 @@ if __name__ == "__main__":
     * 2.   从网站更新小说列表
     * 3.   更新小说的详情(简介、连载状态、评分等)
     * 4.   获取小说的目录
-    * 5.   扫描已下载小说至数据库
-    * 6.   保存小说至本地
+    * 5.   获取小说的章节
+
+
+    * 6.   扫描已下载小说至数据库
+    * 7.   保存小说至本地
 
 
     * 999. 从数据库获取未获取章节的小说列表
@@ -78,8 +88,29 @@ if __name__ == "__main__":
                 except:
                     console.log("[red]异常输入")
             case "5":
-                scan_local_novels()
+                want = input("请输入要获取的小说数量：")
+                raw_list = []
+                # 如果输入的是数字
+                try:
+                    want = int(want)
+                    if want < 1:
+                        # 每一千条数据获取一次
+                        raw_list = get_empty_content_chapters_list_from_db(5000)
+                        while len(raw_list) > 0:
+                            get_content_by_chapter_list(raw_list)
+                            save_chapters_content_to_db(raw_list)
+                            raw_list = get_empty_content_chapters_list_from_db(5000)
+
+                    else:
+                        raw_list = get_empty_content_chapters_list_from_db(want)[:want]
+
+                    get_content_by_chapter_list(raw_list)
+                    save_chapters_content_to_db(raw_list)
+                except:
+                    console.log("[red]异常输入")
             case "6":
+                scan_local_novels()
+            case "7":
                 init_dir()
                 want = input("请输入要获取的小说数量：")
                 raw_list = []
