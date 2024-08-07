@@ -131,6 +131,7 @@ def get_content_by_chapter_list(chapter_list):
         for chapter in chapter_list:
             task_list.append(executor.submit(get_content_by_chapter_id, chapter,progress,task))
         wait(task_list, return_when="ALL_COMPLETED")
+        progress.update(task, completed=len(chapter_list))
     
 
 def get_content_by_chapter_id(chapter,progress,task_id):

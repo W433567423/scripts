@@ -181,6 +181,7 @@ def get_empty_content_chapters_list_from_db(limit=None) -> list:
     cursor.close()
     return chapters_list
 
+#  获取content为空的章节数量
 def get_empty_content_count_from_db()->list:
     global conn
     conn.ping(reconnect=True)
