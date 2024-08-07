@@ -1,4 +1,4 @@
-from db import  get_chapters_list_from_db,update_book_download,update_download_wrong
+from db import  get_chapters_list_from_db,update_novel_download,update_download_wrong
 from utils import session,set_path,console, FrameProgress
 from rich.progress import BarColumn, MofNCompleteColumn, TimeRemainingColumn
 from concurrent.futures import ThreadPoolExecutor,wait
@@ -21,40 +21,40 @@ def save_novel_list(novel_list: list):
         task = progress.add_task("正在保存小说至本地", total=len(novel_list))
         task_list = []
         for novel in novel_list:
-            chapters_list = get_chapters_list_from_db(novel["book_id"])
+            chapters_list = get_chapters_list_from_db(novel["novel_id"])
             task_list.append(executor.submit(get_chapter_content_thread, novel, chapters_list,progress,task))
         wait(task_list, return_when="ALL_COMPLETED")
         update_db(None)
         if(len(novel_list)<99):
             console.log(f"本次下载成功{len(novel_list)}本小说")
             for novel in novel_list:
-                console.log(novel["book_name"])
+                console.log(novel["novel_name"])
 
 # 获取某章节内容(用于submit)
 def get_chapter_content_thread(novel, chapter_list,progress,parent_task):
-    book_content=f"""
-小说名:《{novel["book_name"]}》
-作者:   {novel["book_author"]}
+    novel_content=f"""
+小说名:《{novel["novel_name"]}》
+作者:   {novel["novel_author"]}
 简介:   {novel["intro"]}\n\n
 """
-    task=progress.add_task(f"正在保存《{novel['book_name']}》", total=len(chapter_list))
+    task=progress.add_task(f"正在保存《{novel['novel_name']}》", total=len(chapter_list))
     for chapter in chapter_list:
-        book_content =book_content+ get_chapter_content(novel,chapter).strip()+"\n\n"
+        novel_content =novel_content+ get_chapter_content(novel,chapter).strip()+"\n\n"
         progress.update(task, advance=1)
     # save
-    path=set_path(f"novel/{novel["book_name"]}.txt")
+    path=set_path(f"novel/{novel["novel_name"]}.txt")
     with open(path, "w", encoding="utf-8") as f:
-        f.write(book_content)
-    update_db({"book_id":novel["book_id"],"file_path": path})
+        f.write(novel_content)
+    update_db({"novel_id":novel["novel_id"],"file_path": path})
     progress.update(task, visible=False)
     progress.update(parent_task, advance=1)
 
 
-# 根据book_id、chapter_id获取章节内容
+# 根据novel_id、chapter_id获取章节内容
 def get_chapter_content(novel, chapter):
     chapter_content=f"""{chapter["chapter_name"]}
 """
-    url = f"https://m.biqugen.net/book/{novel["book_id"]}/{chapter["chapter_id"]}.html"
+    url = f"https://m.biqugen.net/book/{novel["novel_id"]}/{chapter["chapter_id"]}.html"
     res=None
     try:
         res = session.get(url,timeout=5)
@@ -94,12 +94,12 @@ def init_dir():
 #   更新数据库
 def update_db(task:dict|None):
     if(task==None):
-        update_book_download(db_tasks)
+        update_novel_download(db_tasks)
         console.log("[green]下载并更新到数据库完成")
         return
     db_tasks.append(task)
     if(len(db_tasks)%6==0):
-        update_book_download(db_tasks)
+        update_novel_download(db_tasks)
         db_tasks.clear()
 
 # 扫描本地小说上传至数据库
@@ -109,7 +109,7 @@ def scan_local_novels():
     for root, dirs, files in os.walk(path):
         for file in files:
             novel = {}
-            novel["book_name"] = file.replace(".txt", "")
+            novel["novel_name"] = file.replace(".txt", "")
             novel["file_path"] = os.path.join(root, file)
             novel_list.append(novel)
     

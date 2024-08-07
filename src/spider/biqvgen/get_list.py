@@ -68,15 +68,15 @@ def get_books_info_thread(i:int,novel_set:list)->list:
     setFlag=False # 用于判断是否已经设置了total
     for item in items:
         novel = {
-            "book_id": 0,
-            "book_name": "",
+            "novel_id": 0,
+            "novel_name": "",
             }
-        novel["book_name"] = normalize_novel_name(item.find("a").text)
+        novel["novel_name"] = normalize_novel_name(item.find("a").text)
         if not setFlag:
             setFlag=True
-        if novel["book_name"] not in novel_set:
-            novel_set.add(novel["book_name"])
-            novel["book_id"] = int(
+        if novel["novel_name"] not in novel_set:
+            novel_set.add(novel["novel_name"])
+            novel["novel_id"] = int(
                 item.find("a").attrs["href"]
                 .split("book/")[-1]
                 .split("/")[0]
@@ -109,7 +109,7 @@ def get_books_other_info(novel_list:list)->list:
 
 # 获取某本小说其他信息(用于submit)
 def get_books_other_info_thread(novel:dict)->None:
-    url = f"https://m.biqugen.net/book/{novel["book_id"]}/"
+    url = f"https://m.biqugen.net/book/{novel["novel_id"]}/"
     res=None
     try:
         res = session.get(url,timeout=5)
@@ -128,10 +128,10 @@ def get_books_other_info_thread(novel:dict)->None:
         novel["abnormal"] = True
         print(f"获取info失败,{url}")
         return
-    novel["book_cover"] = info_div.find("img").attrs["src"]
+    novel["novel_cover"] = info_div.find("img").attrs["src"]
     info_td = info_div.find("td", class_="info")
-    novel["book_author"] = info_td.find_all("p")[0].find("a").text
-    novel["book_category"] = info_td.find_all("p")[1].find("a").text
+    novel["novel_author"] = info_td.find_all("p")[0].find("a").text
+    novel["novel_category"] = info_td.find_all("p")[1].find("a").text
     novel["write_status"] = '已完结' if info_td.find_all("p")[2].text.split("：")[1] else "连载中"
     # 转换为时间戳
     novel["publish_time"] = time.mktime(time.strptime(info_td.find_all("p")[3].text.split("：")[1], "%Y-%m-%d %H:%M:%S"))

@@ -10,25 +10,25 @@ def get_books_list_from_db() -> list:
     cursor = conn.cursor()  # 创建游标
     novel_list = []
     cursor.execute(
-        "SELECT book_id,book_name,book_link,book_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM books"
+        "SELECT novel_id,novel_name,novel_link,novel_author,write_status,popularity,intro,file_path,abnormal,is_extra FROM novels"
     )
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {
-            "book_name": "",
-            "book_link": "",
-            "book_author": "",
-            "book_publish_time": "",
+            "novel_name": "",
+            "novel_link": "",
+            "novel_author": "",
+            "novel_publish_time": "",
             "write_status": "",
             "popularity": "",
             "intro": "",
             "abnormal": False,
             "is_extra": False,
         }
-        novel["book_id"] = item[0]
-        novel["book_name"] = item[1]
-        novel["book_link"] = item[2]
-        novel["book_author"] = item[3]
+        novel["novel_id"] = item[0]
+        novel["novel_name"] = item[1]
+        novel["novel_link"] = item[2]
+        novel["novel_author"] = item[3]
         novel["write_status"] = item[4]
         novel["popularity"] = item[5]
         novel["intro"] = item[6]
@@ -48,15 +48,15 @@ def get_no_extra_books_list_from_db() -> list:
     novel_list = []
 
     cursor.execute(
-        "SELECT book_id FROM books WHERE is_extra=False ORDER BY book_id ASC"
+        "SELECT novel_id FROM novels WHERE is_extra=False ORDER BY novel_id ASC"
     )
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {
-            "book_id": "",
+            "novel_id": "",
             "abnormal": False,
         }
-        novel["book_id"] = item[0]
+        novel["novel_id"] = item[0]
         novel_list.append(novel)
     cursor.close()
     return novel_list
@@ -70,17 +70,17 @@ def get_no_chapter_books_list_from_db() -> list:
     novel_list = []
 
     cursor.execute(
-        "SELECT book_id,book_name FROM books WHERE is_chapter=0 And abnormal=0 ORDER BY book_id ASC"
+        "SELECT novel_id,novel_name FROM novels WHERE is_chapter=0 And abnormal=0 ORDER BY novel_id ASC"
     )
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {
-            "book_id": "",
-            "book_name": "",
+            "novel_id": "",
+            "novel_name": "",
             "abnormal": False,
         }
-        novel["book_id"] = item[0]
-        novel["book_name"] = item[1]
+        novel["novel_id"] = item[0]
+        novel["novel_name"] = item[1]
         novel_list.append(novel)
     cursor.close()
     return novel_list
@@ -94,19 +94,19 @@ def get_download_books_list_from_db() -> list:
     novel_list = []
     # where file_path is null and is_chapter is true
     cursor.execute(
-        "SELECT book_id,book_name,intro,book_author FROM books WHERE file_path IS NULL AND is_chapter=True"
+        "SELECT novel_id,novel_name,intro,novel_author FROM novels WHERE file_path IS NULL AND is_chapter=True"
     )
     db_list = cursor.fetchall()
     for item in db_list:
         novel = {
-            "book_id": "",
-            "book_name": "",
+            "novel_id": "",
+            "novel_name": "",
             "file_path": "",
         }
-        novel["book_id"] = item[0]
-        novel["book_name"] = item[1]
+        novel["novel_id"] = item[0]
+        novel["novel_name"] = item[1]
         novel["intro"] = item[2]
-        novel["book_author"] = item[3]
+        novel["novel_author"] = item[3]
         novel["file_path"] = None
         novel_list.append(novel)
     cursor.close()
@@ -114,14 +114,14 @@ def get_download_books_list_from_db() -> list:
 
 
 # 获取小说章节列表
-def get_chapters_list_from_db(book_id: int) -> list:
+def get_chapters_list_from_db(novel_id: int) -> list:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
     chapters_list = []
     cursor.execute(
-        "SELECT chapter_id,chapter_name,chapter_order FROM chapters WHERE book_id=%s ORDER BY chapter_order ASC",
-        (book_id,),
+        "SELECT chapter_id,chapter_name,chapter_order FROM chapters WHERE novel_id=%s ORDER BY chapter_order ASC",
+        (novel_id,),
     )
     db_list = cursor.fetchall()
     for item in db_list:
@@ -144,7 +144,7 @@ def get_download_overed_books_list_from_db() -> list:
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
     novel_list = []
-    cursor.execute("SELECT book_name FROM books WHERE file_path IS NOT NULL")
+    cursor.execute("SELECT novel_name FROM novels WHERE file_path IS NOT NULL")
     db_list = cursor.fetchall()
     for item in db_list:
         novel_list.append(item[0])
@@ -157,18 +157,18 @@ def reset_books_to_db() -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
-    # 删除表books
+    # 删除表novels
     cursor.execute("DROP TABLE IF EXISTS chapters")
-    cursor.execute("DROP TABLE IF EXISTS books")
-    # 创建表books，books_id:主键
+    cursor.execute("DROP TABLE IF EXISTS novels")
+    # 创建表novels，novel_id:主键
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS books(
-            book_id INT PRIMARY KEY COMMENT '笔趣阁小说id',
-            book_name VARCHAR(255) COMMENT '小说名' not null,
-            book_cover VARCHAR(255) COMMENT '小说封面',
-            book_author VARCHAR(255) COMMENT '小说作者',
-            book_category VARCHAR(255) COMMENT '小说分类',
+        CREATE TABLE IF NOT EXISTS novels(
+            novel_id INT PRIMARY KEY COMMENT '笔趣阁小说id',
+            novel_name VARCHAR(255) COMMENT '小说名' not null,
+            novel_cover VARCHAR(255) COMMENT '小说封面',
+            novel_author VARCHAR(255) COMMENT '小说作者',
+            novel_category VARCHAR(255) COMMENT '小说分类',
             write_status VARCHAR(255) COMMENT '小说连载状态',
             publish_time VARCHAR(255) COMMENT '小说发布时间',
             intro TEXT COMMENT '小说简介',
@@ -185,13 +185,14 @@ def reset_books_to_db() -> None:
             chapter_id INT PRIMARY KEY COMMENT '章节id',
             chapter_name VARCHAR(255) COMMENT '章节名' not null,
             chapter_order INT COMMENT '章节顺序',
-            book_id INT COMMENT '小说id',
-            FOREIGN KEY (book_id) REFERENCES books(book_id)
+            novel_id INT COMMENT '小说id',
+            content TEXT COMMENT '章节内容',
+            FOREIGN KEY (novel_id) REFERENCES novels(novel_id)
         )
     """
     )
     conn.commit()
-    console.log("[green]数据库表books重置成功")
+    console.log("[green]数据库表novels重置成功")
     cursor.close()
 
 
@@ -202,20 +203,21 @@ def reset_chapters_to_db() -> None:
     cursor = conn.cursor()  # 创建游标
     # 删除表chapters
     cursor.execute("DROP TABLE IF EXISTS chapters")
-    # 创建表chapters，chapter_id:主键,book_id:外键
+    # 创建表chapters，chapter_id:主键,novel_id:外键
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS chapters(
             chapter_id INT PRIMARY KEY COMMENT '章节id',
             chapter_name VARCHAR(255) COMMENT '章节名' not null,
             chapter_order INT COMMENT '章节顺序',
-            book_id INT COMMENT '小说id',
-            FOREIGN KEY (book_id) REFERENCES books(book_id)
+            novel_id INT COMMENT '小说id',
+            content TEXT COMMENT '章节内容',
+            FOREIGN KEY (novel_id) REFERENCES novels(novel_id)
         )
     """
     )
-    # 更新books表is_chapter字段
-    cursor.execute("UPDATE books SET is_chapter=False")
+    # 更新novels表is_chapter字段
+    cursor.execute("UPDATE novels SET is_chapter=False")
     conn.commit()
     console.log("[green]数据库表chapters重置成功")
     cursor.close()
@@ -231,7 +233,7 @@ def reset_download_to_db() -> None:
         for file in os.listdir(path):
             os.remove(os.path.join(path, file))
     cursor = conn.cursor()
-    cursor.execute("UPDATE books SET file_path=Null")
+    cursor.execute("UPDATE novels SET file_path=Null")
     conn.commit()
     console.log("[green]下载的文件已全部删除,下载重置成功")
     cursor.close()
@@ -247,43 +249,33 @@ def save_books_list_to_db(novel_list: list) -> None:
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
     # 获取数据库中已有的小说列表(仅获取小说名)
-    cursor.execute("SELECT book_id FROM books")
+    cursor.execute("SELECT novel_id FROM novels")
     overed_novel_list = cursor.fetchall()
     # 从元组列表中提取小说id为元组
     overed_novel_list_id = []
     for novel in overed_novel_list:
         overed_novel_list_id.append(novel[0])
-    with FrameProgress(
-        "[progress.description]{task.description}",
-        BarColumn(),
-        "[progress.percentage]{task.percentage:>3.1f}%",
-        MofNCompleteColumn(),
-        "[cyan]⏳",
-        TimeRemainingColumn(),
-    ) as progress:
-        task = progress.add_task("存储小说列表", total=len(novel_list))
-        # 将list分每chunk_size条执行一次executemany()方法批量更新数据
-        cursor.executemany(
-            """
-                INSERT INTO books(
-                    book_id,
-                    book_name
-                )
-                VALUES(
-                    %s,
-                    %s
-                )
-            """,
-            [
-                (
-                    novel["book_id"],
-                    novel["book_name"],
-                )
-                for novel in novel_list
-                if novel["book_id"] not in overed_novel_list_id
-            ],
-        )
-        progress.update(task, advance=chunk_size)
+
+    cursor.executemany(
+        """
+            INSERT INTO novels(
+                novel_id,
+                novel_name
+            )
+            VALUES(
+                %s,
+                %s
+            )
+        """,
+        [
+            (
+                novel["novel_id"],
+                novel["novel_name"],
+            )
+            for novel in novel_list
+            if novel["novel_id"] not in overed_novel_list_id
+        ],
+    )
     conn.commit()
     cursor.close()
     console.log("小说列表存储成功")
@@ -320,26 +312,26 @@ def update_books_list(list: list) -> None:
         for i in range(0, len(right_list), chunk_size):
             cursor.executemany(
                 """
-                    UPDATE books
+                    UPDATE novels
                     SET
-                        book_cover=%s,
-                        book_author=%s,
-                        book_category=%s,
+                        novel_cover=%s,
+                        novel_author=%s,
+                        novel_category=%s,
                         write_status=%s,
                         publish_time=%s,
                         intro=%s,
                         is_extra=True
-                    WHERE book_id=%s
+                    WHERE novel_id=%s
                 """,
                 [
                     (
-                        novel["book_cover"],
-                        novel["book_author"],
-                        novel["book_category"],
+                        novel["novel_cover"],
+                        novel["novel_author"],
+                        novel["novel_category"],
                         novel["write_status"],
                         novel["publish_time"],
                         novel["intro"],
-                        novel["book_id"],
+                        novel["novel_id"],
                     )
                     for novel in right_list[i : i + chunk_size]
                 ],
@@ -351,12 +343,12 @@ def update_books_list(list: list) -> None:
             for i in range(0, len(wrong_list), chunk_size):
                 cursor.executemany(
                     """
-                        UPDATE books
+                        UPDATE novels
                         SET
                             abnormal=True
-                        WHERE book_id=%s
+                        WHERE novel_id=%s
                     """,
-                    [(novel["book_id"],) for novel in wrong_list[i : i + chunk_size]],
+                    [(novel["novel_id"],) for novel in wrong_list[i : i + chunk_size]],
                 )
                 progress.update(task2, advance=chunk_size)
             progress.update(task2, completed=len(wrong_list))
@@ -392,7 +384,7 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                         chapter_id,
                         chapter_name,
                         chapter_order,
-                        book_id
+                        novel_id
                     )
                     VALUES(
                         %s,
@@ -406,7 +398,7 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                             chapter["chapter_id"],
                             chapter["chapter_name"],
                             chapter["chapter_order"],
-                            novel["book_id"],
+                            novel["novel_id"],
                         )
                         for chapter in novel["chapters_list"]
                     ],
@@ -414,12 +406,12 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                 # 更新books表is_chapter字段
                 cursor.execute(
                     """
-                        UPDATE books
+                        UPDATE novels
                         SET
                             is_chapter=True
-                        WHERE book_id=%s
+                        WHERE novel_id=%s
                     """,
-                    (novel["book_id"],),
+                    (novel["novel_id"],),
                 )
             except Exception as e:
                 # 写入log文件
@@ -432,7 +424,7 @@ def save_chapters_list_to_db(novel_list: list) -> None:
                 ) as f:
                     # 写入时间、id、书名、错误信息
                     f.write(
-                        f"{get_now_time()} {novel['book_id']} {novel['book_name']} {e}\n"
+                        f"{get_now_time()} {novel['novel_id']} {novel['novel_name']} {e}\n"
                     )
                     # 如果有章节信息,写入前三节章节信息
                     if novel.get("chapters_list") and len(novel["chapters_list"]) != 0:
@@ -448,15 +440,15 @@ def save_chapters_list_to_db(novel_list: list) -> None:
 
 
 # 更新小说下载地址
-def update_book_download(novel_list: list) -> None:
+def update_novel_download(novel_list: list) -> None:
     global conn
     conn.ping(reconnect=True)
     cursor = conn.cursor()  # 创建游标
     for novel in novel_list:
         try:
             cursor.execute(
-                "UPDATE books SET file_path=%s WHERE book_id=%s",
-                (novel["file_path"], novel["book_id"]),
+                "UPDATE novels SET file_path=%s WHERE novel_id=%s",
+                (novel["file_path"], novel["novel_id"]),
             )
         except Exception:
             # 写入日志
@@ -467,8 +459,8 @@ def update_book_download(novel_list: list) -> None:
                 "a",
                 encoding="utf-8",
             ) as f:
-                f.write(f"{get_now_time()} {novel['book_id']} UPDATE books SET file_path=%s WHERE book_id=%s,{
-                (novel["file_path"], novel["book_id"])}\n"
+                f.write(f"{get_now_time()} {novel['novel_id']} UPDATE novels SET file_path=%s WHERE novel_id=%s,{
+                (novel["file_path"], novel["novel_id"])}\n"
                 )
           
     # 当前时间
@@ -493,7 +485,7 @@ def update_download_wrong(novel_list: list) -> None:
     # 剔除已下载的小说
     ready_arr = []
     for novel in novel_list:
-        if novel["book_name"] not in remote_list:
+        if novel["novel_name"] not in remote_list:
             ready_arr.append(novel)
 
     with FrameProgress(
@@ -507,8 +499,8 @@ def update_download_wrong(novel_list: list) -> None:
         task = progress.add_task("将本地小说更新到数据库", total=len(ready_arr))
         for novel in ready_arr:
             cursor.execute(
-                "UPDATE books SET file_path=%s WHERE book_name=%s",
-                (novel["file_path"], novel["book_name"]),
+                "UPDATE novels SET file_path=%s WHERE novel_name=%s",
+                (novel["file_path"], novel["novel_name"]),
             )
             progress.update(task, advance=1)
 

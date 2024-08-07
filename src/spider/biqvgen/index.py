@@ -24,7 +24,7 @@ if __name__ == "__main__":
     menu = Panel(
         """[black]
     * 0. 退出
-    * 1-1. 重置数据库books表
+    * 1-1. 重置数据库novels表
     * 1-2. 重置数据库chapters表
     * 1-3. 重置数据库download表
     * 2.   从网站更新小说列表
@@ -102,7 +102,7 @@ if __name__ == "__main__":
                     console.log("🚀 ~ raw_list[0]:", raw_list[0])
                     console.log("🚀 ~ raw_list[1]:", raw_list[1])
             case "a":
-                novel = {"book_id": 3030}
+                novel = {"novel_id": 3030}
                 get_books_other_info_thread(novel)
                 console.log("🚀 ~ novel:", novel)
             case _:

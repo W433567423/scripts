@@ -32,11 +32,11 @@ chunk_size = 512  # 分片大小
 
 # 连接数据库
 conn = pymysql.connect(
-    host="bj-cynosdbmysql-grp-jrtc8xqu.sql.tencentcdb.com",
-    user="tutu",
-    password="1234TTtt",
-    port=23423,
-    database="novel",
+    host="localhost",
+    user="root",
+    password="1234TTtt*",
+    port=3306,
+    database="novels",
     charset="utf8",
 )
 
